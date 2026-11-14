@@ -1,0 +1,21 @@
+# Clean speech of the three main actors, chosen by the owner (2026-11-13).
+# Key: character id of the main role the actor plays (see characters.yaml).
+# Each line: "<episode> <m:ss>-<m:ss>", only that actor speaking.
+cvarkov:
+  - 243 5:02-5:28
+  - 243 7:27-8:30
+  - 1802 10:05-10:51
+  - 2188 2:38-3:07
+  - 244 4:33-5:05
+
+torbica:
+  - 475 0:35-1:30
+  - 729 2:58-3:28
+  - 729 4:27-4:57
+  - 729 5:32-5:42
+
+boskic:
+  - 243 3:23-3:51
+  - 1802 0:15-1:15
+  - 25 6:50-7:41
+  - 2003 3:11-4:14

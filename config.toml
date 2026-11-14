@@ -1,0 +1,82 @@
+youtube_channel = "https://www.youtube.com/@DrzavniPosaoSerija"
+
+[paths]
+# Paths inside the containers. /data is /opt/drzavni-posao/data on the mini PC.
+data_dir = "/data"
+db = "/data/dp.sqlite"
+catalog_dir = "/data/catalog"
+seed_characters = "/app/seed/characters.yaml"
+seed_pilot = "/app/seed/pilot.yaml"
+
+[download]
+# Pause between YouTube downloads (seconds, random in this range).
+pause_min_s = 20
+pause_max_s = 30
+
+[transcribe]
+language = "sr"
+# Target length of one Whisper request; cuts are placed in the nearest silence.
+chunk_target_s = 150
+chunk_max_s = 180
+# The first and last ~30 s (intro/outro music) are separate requests, so music
+# cannot push Whisper into a loop over the dialogue that follows.
+edge_s = 30
+
+[services]
+# Shared services owned by another project. Read-only use, see CLAUDE.md.
+whisper_url = "http://172.17.0.1:8081"
+llama_url = "http://172.17.0.1:8080"
+# This project's embed container (bge-m3 on the CPU), by compose service name.
+# The api container (host network) reaches it on DP_EMBED_URL=http://127.0.0.1:8091.
+embed_url = "http://embed"
+
+[index]
+# Description used for the index: config name of the enrichment model.
+enrich_model = "sonnet"
+# Transcript windows: this long, a new one every hop_s seconds (overlap).
+window_s = 75
+hop_s = 40
+
+[enrich.models.qwen]
+# Local llama-server, one slot shared with another project: one request at a time,
+# pauses in the [schedule] window.
+base_url = "http://172.17.0.1:8080/v1"
+model = "qwen3.6-35b-a3b"
+local = true
+max_tokens = 4000
+# Without a grammar Qwen invents its own keys; llama-server enforces the schema.
+json_schema = true
+extra = { chat_template_kwargs = { enable_thinking = false } }
+
+[enrich.models.glm]
+# z.ai pay-per-token API (not the Coding Plan endpoint). GLM-5.3 always thinks;
+# "low" keeps the reasoning short. Key: ZAI_API_KEY in .env.
+base_url = "https://api.z.ai/api/paas/v4"
+model = "glm-5.3"
+api_key_env = "ZAI_API_KEY"
+max_tokens = 8000
+extra = { reasoning_effort = "low" }
+
+[enrich.models.haiku]
+# Claude via the Anthropic SDK; key: ANTHROPIC_API_KEY in .env.
+api = "anthropic"
+model = "claude-haiku-5-5"
+effort = "low"
+max_tokens = 16000
+
+[enrich.models.sonnet]
+api = "anthropic"
+model = "claude-sonnet-5-5"
+effort = "low"
+max_tokens = 16000
+
+[api]
+# Hostnames (without port) accepted in the Host header on /mcp (DNS rebinding
+# protection). DP_BIND_ADDR is added from the environment; every entry gets
+# ":<DP_API_PORT>" (default 8090) appended.
+allowed_hosts = ["llmserver"]
+
+[schedule]
+# Mass processing pauses daily in this window (Europe/Belgrade).
+pause_start = "18:55"
+pause_end = "20:00"

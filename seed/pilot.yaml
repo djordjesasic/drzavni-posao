@@ -1,0 +1,33 @@
+# Pilot epizode za fazu 1 – bira vlasnik (10 epizoda).
+# Putanja u repou: seed/pilot.yaml
+#
+# epizoda: redni broj iz naslova na YouTube-u (npr. 2036); specijali imaju id od 10001
+# zasto:   kratko, šta je u epizodi bitno (gost, dvostruka uloga, imitacija, replika...)
+#
+# Ostalih 30 bira obrada: 10 iz prvih 50 epizoda i 20 ravnomerno kroz sezone.
+
+# 5 epizoda sa gostima ili dvostrukim ulogama
+# (Stevica, Boškić stariji, Duško, Jagoda, grof Sekereši, matičar)
+gosti_i_dvostruke_uloge:
+  - epizoda: 426
+    zasto: pricaju kako je bilo devedesetih i kako je Boškićev otac dosao u kancelariju, tu se prvi put pojavljuje boskicev otac. Inflacija, sverc goriva, insinuiraju da je isto kao sada
+  - epizoda: 730
+    zasto: prvi put se pojavljuje Jagoda
+  - epizoda: 585
+    zasto: stevica cvarkov dolazi sa usecerenim jabukama, Boškić ulazi u kancelariju i misli da je Djordje
+  - epizoda: 1308
+    zasto: Dule postar jedini zna gde se ide na radnicke sportske igre, ali nece da kaze jer ne sme. Sva trojica ga podmicuju ali on nece da kaze, na kraju boskic zove svog oca koji dolazi i pocinje da ucenjuje dula sa dulovim prekrsajima za koje sluzba zna
+  - epizoda: 768
+    zasto: Cvarkov i boskic dolaze u Rumuniju da traze Dragana, srecu grofa Sekeresija koje je ujeo Dragana i postao dodjos
+# 5 epizoda koje dobro pamtiš; bar jedna sa imitacijom dijalekta
+zapamcene:
+  - epizoda: 124
+    zasto: Djordje prica kako je bilo u toku bombardovanja dok mu je nadredjeni bio rezervni potporucnik Dragan Torbica. Imitira Torbicu kako komanduje baterijom pvo
+  - epizoda: 254
+    zasto: dragan dolazi u kancelariju i ponasa se kao da se drogirao, boskic i cvarkov beze, a dragan je glumio da bi ostao sam da jede ovciju glavu.
+  - epizoda: 647
+    zasto: epizoda se zavrsava tako sto svi slusaju vucica na vestima i bleje kao ovce
+  - epizoda: 699
+    zasto: cvarkov sprema govor za predizborni miting i prica kao vuk draskovic
+  - epizoda: 2194
+    zasto: baba cvarkov je odlucila da se izjasnjava kao deda, djordje cvarkov na to odgovara tako sto pocinje da se izjasnjava kao dodjos, zove babu i prica kao dodjos

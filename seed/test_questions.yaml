@@ -1,0 +1,125 @@
+# Test pitanja za fazu 1: opis epizode po sećanju -> koja je epizoda i gde.
+#
+# Kako popuniti:
+#   pitanje  – napiši tačno kako bi stvarno kucao, sa greškama, bez kvačica, šta god.
+#              NE gledaj epizodu pre pisanja; poenta je sećanje, ne citat.
+#   epizoda  – broj epizode koja je tačan odgovor (iz spiska ispod).
+#   minut    – (opciono) otprilike kad se to dešava, "m:ss" ili samo "m".
+#   tip      – (opciono) radnja | citat | lik | gost | mesto | drugo
+#   napomena – (opciono) bilo šta: "nisam siguran", "ima dve slične" ...
+#
+# Cilj: 15–20 pitanja, raznih tipova (ne samo citati). Mogu i 2–3 pitanja
+# za epizode VAN pilota – tada očekujemo "nije pronađeno", i to je dobar test.
+#
+# Pilot epizode (samo one su transkribovane):
+#      3  Biti slobodan            612  Oguglavanje            1489  Bezveze je ispalo
+#      8  Poliglota                647  Beeeee                 1614  Kalkulator
+#     13  Čili Vili hod            699  Biračko telo           1739  Kaki
+#     18  Perut                    730  Jagoda                 1863  Bitan šraf
+#     23  Šah                      739  Kanada                 1987  5 strana
+#     28  Ušteđevina               768  Preobražaj             2111  Džentlmenski sporazum
+#     33  Pasijans                 864  Broker                 2194  Društveni konstrukt
+#     38  Svadba                   988  Dostojan protivnik     2236  Nova buduća riba
+#     43  Grand                   1117  Nasledstvo             2360  Histori
+#     48  Povreda na radu         1241  Bog kompjuteristike    2484  Božićno čudo
+#    112  Beosong                 1308  Malo je mutno
+#    124  Rezerva                 1365  Komboškobuha
+#    237  Dnevnice
+#    254  Narkotici
+#    362  Mačevanje
+#    426  Devedesete
+#    487  Dreger
+#    585  Stevica Čvarkov
+
+pitanja:
+  - pitanje: "cvarkov vezba predizborni govor sa megafonom i prica kao vuk draskovic"
+    epizoda: 699
+    minut: ""
+    tip: radnja
+    napomena: ""
+
+  - pitanje: "u kojoj epizodi se prvi put pojavljuje boskicev otac"
+    epizoda: 426
+    minut: ""
+    tip: ""
+    napomena: ""
+
+  - pitanje: "dragan se pravi da je nadrogiran da bi ostao sam i sam pojeo ovciju glavu"
+    epizoda: 254
+    minut: ""
+    tip: ""
+    napomena: ""
+
+  - pitanje: "kad cvarkov greje sendvic u boskicevom laptopu kao u tosteru"
+    epizoda: 612
+    minut: ""
+    tip: ""
+    napomena: ""
+
+  - pitanje: "ulaze kroz prozor jer je na ulaz firme postavljen dreger"
+    epizoda: 487
+    minut: ""
+    tip: ""
+    napomena: ""
+
+  - pitanje: "baba cvarkov se identifikuje kao deda"
+    epizoda: 2194
+    minut: ""
+    tip: ""
+    napomena: ""
+
+  - pitanje: "sekeresi postaje dodjos jer je ujeo dragana"
+    epizoda: 768
+    minut: ""
+    tip: ""
+    napomena: ""
+
+  - pitanje: "epizoda kada ekslodira karbitno bure na bozic"
+    epizoda: 2484
+    minut: ""
+    tip: ""
+    napomena: ""
+
+  - pitanje: "cvarkov misli da je dragan mentalno bolestan i pocinje da nabraja F sifre dijagnoza"
+    epizoda: 739
+    minut: ""
+    tip: ""
+    napomena: ""
+
+  - pitanje: "cvarkov i boskic se klade na to da li ce dragan pokupiti bacenu stvar pored kontejnera"
+    epizoda: 2111
+    minut: ""
+    tip: ""
+    napomena: ""
+
+  - pitanje: "cvarkov hoce na dvoboj macevanje protiv klaca"
+    epizoda: 362
+    minut: ""
+    tip: ""
+    napomena: ""
+
+  - pitanje: "cvarkov prica kao pokojni cika franjo i kaze ne bum se on bunil mimo pet gemisteka pored"
+    epizoda: 864
+    minut: ""
+    tip: citat
+    napomena: ""
+
+  - pitanje: "gde dragan radi u perionici automobila"
+    epizoda: 2344
+    tip: radnja
+    napomena: "van pilota"
+
+  - pitanje: "kad gadjaju vazdusnom puskom"
+    epizoda: 1218
+    tip: radnja
+    napomena: "van pilota"
+
+  - pitanje: "kad cvarkov kaze das im srednji prst a oni hoce celu ruku."
+    epizoda: 1685
+    tip: citat
+    napomena: "van pilota"
+
+  - pitanje: "gde se pojavljuje biljan ristic"
+    epizoda: 988
+    tip: ""
+    napomena: ""

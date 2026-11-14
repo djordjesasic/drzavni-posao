@@ -1,0 +1,56 @@
+[project]
+name = "drzavni-posao"
+version = "0.1.0"
+description = "Knowledge base and episode search for the Državni posao series"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "jinja2",
+    "pydantic",
+    "pyyaml",
+    "httpx",
+    "yt-dlp",
+    # JS challenge solving for YouTube: deno runtime + yt-dlp's EJS solver scripts.
+    "yt-dlp-ejs",
+    "deno",
+    "mcp",
+    # Claude API for enrichment (owner approved 2026-11-13): batches, prompt caching.
+    "anthropic",
+    # Speaker recognition: ECAPA voice embeddings on the CPU (owner approved).
+    "speechbrain",
+    "torch",
+    "torchaudio",
+    "numpy",
+]
+
+# CPU-only torch wheels: no CUDA libraries in the image, nothing touches the GPU.
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+torchaudio = { index = "pytorch-cpu" }
+
+[dependency-groups]
+dev = ["pytest", "ruff"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["dp"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-p no:cacheprovider"

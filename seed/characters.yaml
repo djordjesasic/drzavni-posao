@@ -1,0 +1,416 @@
+# Početni registar likova – Državni posao
+# Putanja u repou: seed/characters.yaml
+#
+# vrsta:
+#   glavni        – jedan od tri glavna lika
+#   na_ekranu     – sporedni lik koji se pojavljuje na ekranu
+#   samo_u_prici  – lik koji postoji samo kroz priču, nikad na ekranu
+#   samo_glas     – nikad se ne vidi, ali se ponekad čuje njegov glas
+# igra:      id lika čiji glumac igra i ovaj lik (samo za dvostruke uloge)
+# nadimci:   sva imena pod kojima se lik pominje; dopuni slobodno
+# opis:      kratko, da model razlikuje slične likove
+# Polja koja ne znaš ostavi prazna. Obrada će predlagati dopune, a ti ih odobravaš.
+
+glavni:
+  - id: cvarkov
+    ime: Đorđe Čvarkov
+    vrsta: glavni
+    nadimci: [Čvarkov, Đorđe, Žorž Papadubi, Čvare Šala, Đoka, Đoko]
+    opis: glavni arhivator; osamdesetih je bio finansijski direktor dok je Marjanović bio generalni, autonomas; smenjen u jogurt revoluciji 1989. nasledio Lazara Malinačkog na mestu glavnog arhivatora. zivi sa babom i frau silovickom na pejicevim salasima gde ima i farmu pilica. cesto se u radnom vremenu bavi prodajom pilica i jaja.
+
+  - id: torbica
+    ime: Dragan Torbica
+    vrsta: glavni
+    nadimci: [Torbica, Dragan, Dragan Jove Torbica]
+    opis: otac mu je Jovo; često se predstavlja kao „Dragan Jove Torbica“ (ime oca u sredini); dodjos, krajisnik, poreklo srednja bosna. poceo da radi kao vozac u voznom parku. vozio Marjanovića dok je bio generalni i Cvarkova dok je bio finansijski. rezervni potporucnik, zavrsio skolu za rezervne oficire u bileci. studirao odbranu u sarajevu, ali nije zavrsio.
+
+  - id: boskic
+    ime: Boškić
+    vrsta: glavni
+    nadimci: [Boškić]
+    opis: najmlađi od trojice; sin Boškića starijeg; u firmu ga je preko veze zaposlio stariji brat. zamenik zamenika glavnog arhivatora, poreklom je Srbijanac (u smislu da je iz Centralne Srbije, tačnije iz sela Donja Kravarica kod Arilja), što Čvarkov često naglašava i iako je rođen u Novom Sadu, Čvarkov mu ne priznaje da je Vojvođanin. Završio je master studije na privatnom fakultetu gde je upisao doktorske studije. U preduzeće ga je zaposlio stariji brat preko veze. Još u ranom detinjstvu je pokazivao da je sporiji i netalentovaniji od brata i oca, visokog oficira OZNA-e, kasnije UDBA-e. U seriji on predstavlja odraz mladih u Srbiji i odraz njihovog razmišljanja
+
+dvostruke_uloge:
+  - id: boskic_stariji
+    ime: Boškić stariji
+    vrsta: na_ekranu
+    igra: boskic
+    nadimci: []
+    opis: Boškićev otac, penzionisani oficir OZNA-e, kasnije UDBA-e. Učesnik raznih tendera i vlasnik brojnih nekretnina u Srbiji i svetu, kao i računa na Kipru.
+
+  - id: stevica_cvarkov
+    ime: Stevica Čvarkov
+    vrsta: na_ekranu
+    igra: cvarkov
+    nadimci: [Stevica]
+    opis: Đorđev brat, prodavac usecerenih jabuka
+
+na_ekranu:
+  - id: dusko_postar
+    ime: Duško poštar
+    vrsta: na_ekranu
+    nadimci: [Duško, Dule, Duško Tegeltija]
+    opis: debeli poštar, Torbičin zemljak; priča mnogo nebitnih priča i dosađuje trojici
+
+  - id: jagoda
+    ime: Jagoda spremačica
+    vrsta: na_ekranu
+    nadimci: [Jagoda, Jagoda Marko]
+    opis: spremačica, u firmi preko 30 godina, poznata po oštrom jeziku; udala se za Daneta (bivši grof Sekereši) i ima sina sa njim
+
+  - id: grof_sekeresi
+    ime: Grof Sekereši
+    vrsta: na_ekranu
+    nadimci: [Sekereši, grof, Seki, Danilo, Dane]
+    opis: ne mešati sa Danetom od Šljive do Banane. grof sekeresi je vampir koji je ujeo dragana torbicu, ali umesto da torbica postane vampir, sekeresi je postao krajisnik/dodjos. čuveni vampir drakulskog tipa poznat i kao Seki. Lik koji se često pominjao u ranijim epizodama. U petoj sezoni je kidnapovao Torbicu i hteo da ga menja za Šilovičku. Međutim, nakon što je ujeo Torbicu i posisao mu krv, i sam je postao Krajišnik, krstio se, dobio ime Danilo i nadimak Dane, Torbica mu je kum. Sada je kupio plac na Veterničkoj rampi pored Torbičinog, pa mu stalno dosađuje. Stupio u brak sa Jagodom i dobio sina sa njom.
+
+  - id: maticar_ristic
+    ime: Biljan Ristić
+    vrsta: na_ekranu
+    nadimci: [matičar, Ristić]
+    opis: matičar; tuži trojicu arhivatora u Strazburu jer čeka rešenje svog predmeta
+
+samo_u_prici:
+  - id: baba_cvarkov
+    ime: Baba Čvarkov
+    vrsta: samo_u_prici
+    nadimci: [baba Čvarkov]
+    opis: baba djordja cvarkova. poznata po svojim kartaroskim i kockarskim vezama i umecima, svi joj duguju pare. "drzala pikslu" za kockanje, mnoge "odrala" na barbutu.
+
+  - id: frau_silovicka
+    ime: Frau Šilovička
+    vrsta: samo_u_prici
+    nadimci: [Šilovička, gospođa fon Šilović]
+    opis: kućna prijateljica porodice Čvarkov, po poreklu je polu „Švabica” polu Čehinja, čist primer k. und k. kulture, za nju se saznalo da je završila mušku gimnaziju u Beču 1812. i da se bavila nekom vrstom prostitucije jer je, kako Čvarkov kaže, „držala javnu kuću” ili „bordel” i da se borila da se njen posao „legalizuje”, ali kako Čvarkov kaže izuzetno držeća, „u biciklističkim (pantalonama) sa 400-500 metara još uvek može da prevari”, ima onu „finu patinu na licu da joj možeš strugati dletom”. Kada je bila mlada, u jednom dvorcu u istočnom Banatu, nju je ugrizao vampir grof Sekereši, ali se nije pretvorila u istog jer „nije bila devica” i imala je ljubavne afere sa skoro svim istorijskim ličnostima. Odmalena uz porodicu Čvarkov i malog Đorđa je pratila kad su god išli u inostranstvo. Poseduje češku deviznu penziju i stan u centru grada koji Čvarkov izdaje i uzima kiriju za njega.
+
+  - id: zivan_radosavljevic
+    ime: Živan Radosavljević
+    vrsta: samo_u_prici
+    nadimci: [Živan, Čika Žika, Žika, Žiko]
+    opis: „d” se piše, ali se ne čita - čika Žika - skraćeno Žika (po Torbici Žiko) - težak alkoholičar i komšija porodice Čvarkov. Srbijanac iz Majdanpeka, „ali fin čovek”, kako Čvarkov kaže. Torbica uvek voli da ga pohvali govoreći, „ma Žiko je dobar čovjek!”. Njegova mama Mila nije imala mleka da ga doji pa ga je dala u cirkus da ga doji bradata žena, koju je on posle zvao mamom. Otac mu se zvao Milun. Mladost je proveo u cirkusu gde je čak godinu i po dana glumio lava. Spoljni momak i komšija Čvarkovih. Zadužen za sve nezahvalne poslove na Pejićevim Salašima, posebno za transport familije Čvarkov, koju prevozi na motoru sa prikolicom koji mu je ostavio Šicer. Bio je železničar, ali kako se ispostavilo „nevino optužen” da je ukrao pragove sa železnice koje su kasnije ugradili u kokošinjac. Čvarkov ga je vodio na miting 9. marta 1991. u Beogradu gde je Žika onako pijan uzeo policijskog konja i pokušao da na juriš zauzme skupštinu. Žiku su našli, a konja prodali Belom Bori zajedno sa perjem koje nosiše da mu prodaju. Za Žikin lik, pored alkoholizma, bitno je pomenuti da je dobio četiri šamara od Steve Višekrune, i to u rudniku, jer je pevao protiv Tita. Navodno, Žika ima sina, takođe alkoholičara, 44-ogodišnjeg fudbalera u Glogonju, kog zovu Kostolom. Za vreme bitke na Sutjesci bio je član Titove garde.
+
+  - id: jovo_torbica
+    ime: Jovo Torbica
+    vrsta: samo_u_prici
+    nadimci: [Jovo]
+    opis: Draganov otac; „Jove“ u „Dragan Jove Torbica“ je njegovo ime
+
+  - id: smiljka_torbica
+    ime: Smiljka Torbica
+    vrsta: samo_u_prici
+    nadimci: [Smiljka, Smilji]
+    opis: Draganova žena
+
+  - id: milos_torbica
+    ime: Miloš Torbica
+    vrsta: samo_u_prici
+    nadimci: []
+    opis: Draganov stariji sin; ne mešati sa Milošem portirom
+
+  - id: milan_torbica
+    ime: Milan Torbica
+    vrsta: samo_u_prici
+    nadimci: []
+    opis: Draganov mlađi sin
+
+  - id: milica_torbica
+    ime: Milica Torbica
+    vrsta: samo_u_prici
+    nadimci: []
+    opis: Draganova ćerka, pametna, najmladje dete. dragan cesto kaze da mu je zao sto je zensko jer je pametnija od one dvojice.
+
+  - id: direktor_dobrosavljev
+    ime: Direktor Dobrosavljev
+    vrsta: samo_u_prici
+    nadimci: [Dobrosavljev]
+    opis: direktor posle 2000. (stric mu postao ministar), ranije vozač u Torbičinom voznom parku; kasnije ga je zamenio Dobromirov; ne mešati sa Dobromirovim
+
+  - id: direktor_dobromirov
+    ime: Direktor Dobromirov
+    vrsta: samo_u_prici
+    nadimci: [Dobromirov]
+    opis: direktor koji je zamenio Dobrosavljeva; blizak porodici Boškić, naročito Boškiću starijem; ne mešati sa Dobrosavljevim
+
+  - id: direktor_marjanovic
+    ime: Direktor Marjanović
+    vrsta: samo_u_prici
+    nadimci: [Marjanović, Živko Marjanović]
+    opis: generalni direktor firme osamdesetih, kad je Čvarkov bio finansijski; ne mešati sa Ćevarom Marjanovićem. takodje je dodjos/krajisnik. kada ga cvarkov citira cesto ga imitira krajiskim naglaskom.
+
+  - id: visekruna
+    ime: Višekruna
+    vrsta: samo_u_prici
+    nadimci: [Stevo Višekruna]
+    opis: visekruna je agent/operativac/policajac pod komandom boskica starijeg. poznat po jakim samarima, Posledice koje nastaju nakon njegovih šamara dele se u nekoliko kategorija. Jedan šamar je edukativnog karaktera. Posle dva žrtva vidi belu svetlost u daljini. Posle tri se gubi sećanje, a četiri je dobio Žika i od tad jaše go krmaču, spava kod Šilovičke na tavanu, jede sirovu ribu i stalno traži neki prsten i vice "da,druze"
+
+  - id: licina
+    ime: Goran Ličina
+    vrsta: samo_u_prici
+    nadimci: []
+    opis: kolega iz susedne kancelarije, rođeni zavodnik iako srednjovečan
+
+  - id: loncar
+    ime: Lončar
+    vrsta: samo_u_prici
+    nadimci: []
+    opis: kolega iz susedne kancelarije
+
+  - id: arpad_sabo
+    ime: Arpad Sabo
+    vrsta: samo_u_prici
+    nadimci: [Arpad]
+    opis: kolega sa drugog sprata; sa Velinkom Klaćem čuva kopir-aparat od Torbice i ostalih
+
+  - id: debela_vukosava
+    ime: Debela Vukosava
+    vrsta: samo_u_prici
+    nadimci: [Vukosava, Vuka]
+    opis: koleginica iz firme; bila u tajnoj vezi sa Boškićem; Čvarkov joj tajnim hodnicima dostavlja pokvarena jaja
+
+  - id: magda
+    ime: Magda
+    vrsta: samo_glas
+    nadimci: []
+    opis: sekretarica direktora Dobrosavljeva, kasnije Dobromirova; Boškić je zaljubljen u nju, ali nema hrabrosti da joj priđe
+
+  - id: milos_portir
+    ime: Miloš portir
+    vrsta: samo_u_prici
+    nadimci: [portir]
+    opis: portir, poreklom iz Bosne, voli alkohol; ne mešati sa Milošem Torbicom
+
+  - id: velinko_klac
+    ime: Velinko Klać
+    vrsta: samo_u_prici
+    nadimci: [Velinko]
+    opis: kolega sa drugog sprata; postao glavni arhivator na početku treće sezone, ali je umro od srčanog udara; otac Jadranka Klaća, ne mešati ga sa njim
+
+  - id: jadranko_klac
+    ime: Jadranko Klać
+    vrsta: samo_u_prici
+    nadimci: [Jadranko]
+    opis: sin Velinka Klaća, preuzeo očevo mesto u firmi; ne mešati sa Velinkom
+
+  - id: rade_kornjaca
+    ime: Rade Kornjača
+    vrsta: samo_u_prici
+    nadimci: [Kornjača]
+    opis: najveća žrtva trojice arhivatora, od 1983. čeka rešenje svog predmeta; kasnije im je ukrao zlato Lazara Malineckog i pobegao na Havaje
+
+  - id: mitar_mitra_mitar
+    ime: Mitar Mitra Mitar
+    vrsta: samo_u_prici
+    nadimci: []
+    opis:
+
+  - id: cevara_marjanovic
+    ime: Ćevara Marjanović
+    vrsta: samo_u_prici
+    nadimci: [Ćevara]
+    opis: ne mešati sa direktorom Marjanovićem - brat direktora Marjanovića
+
+  - id: dane_od_sljive_do_banane
+    ime: Dane od Šljive do Banane
+    vrsta: samo_u_prici
+    nadimci: [Dane]
+    opis: drži piljarnicu „Od šljive do banane“ na pijaci, gde prodaje Vida; ne mešati sa Danetom (bivši grof Sekereši)
+
+  - id: joja
+    ime: Joja
+    vrsta: samo_u_prici
+    nadimci: []
+    opis:
+
+  - id: radenko_salapura
+    ime: Radenko Salapura Tetak
+    vrsta: samo_glas
+    nadimci: [Tetak]
+    opis: Torbičin rođak, gastarbajter u Nemačkoj; šalje mu pakete sa lošom robom; nikad se ne vidi na ekranu, ali se par puta čuje njegov glas
+
+  - id: ubiparip
+    ime: Uvaženi kolega Ubiparip Ilija
+    vrsta: samo_u_prici
+    nadimci: [Ubiparip]
+    opis: dodjos ali je potpuno prihvatio vodjvodjansku kulturu, cak i njihov govor i naglasak. Zbog toga ga cvarkov voli a torbica ga ne voli.
+
+  - id: ildika
+    ime: Ildika
+    vrsta: samo_u_prici
+    nadimci: []
+    opis:
+
+# Dodato sa sr.wikipedia (stranica serije), 14. 11. 2026, uz odobrenje vlasnika.
+sa_wikipedije:
+  - id: anja
+    ime: Anja
+    vrsta: na_ekranu
+    nadimci: []
+    opis: Boškićeva bivša žena
+
+  - id: dragica
+    ime: Dragica spremačica
+    vrsta: na_ekranu
+    nadimci: [Dragica]
+    opis: još jedna spremačica u preduzeću; ne mešati sa Jagodom
+
+  - id: miki_stupar
+    ime: Milan „Miki“ Stupar
+    vrsta: na_ekranu
+    nadimci: [Miki Stupar]
+    opis: glumac koga je Biljan Ristić unajmio
+
+  - id: zivica_kizdobranski
+    ime: Živica Kiždobranski
+    vrsta: na_ekranu
+    nadimci: [Kižda]
+    opis: nekada najbolji prijatelj i idol Čvarkova
+
+  - id: zastavnik_smajo
+    ime: Zastavnik Smajo
+    vrsta: na_ekranu
+    nadimci: [Smajo]
+    opis: nadređeni Torbici u školi rezervnih oficira
+
+  - id: lazar_malinacki
+    ime: Lazar Malinački
+    vrsta: samo_glas
+    nadimci: [Laza Masni, Malinački, Malinecki]
+    opis: glavni arhivator pre Čvarkova
+
+  - id: boskic_brat
+    ime: Brat Boškić
+    vrsta: samo_u_prici
+    nadimci: [Boškićev brat]
+    opis: Boškićev stariji brat, doveo ga je u preduzeće preko veze
+
+  - id: mama_boskic
+    ime: Mama Boškić
+    vrsta: samo_u_prici
+    nadimci: [Mamička]
+    opis: Boškićeva majka
+
+  - id: boban
+    ime: Boban
+    vrsta: samo_u_prici
+    nadimci: []
+    opis: jedan od Boškićeva dva najbolja druga (Boban i Deki)
+
+  - id: deki
+    ime: Deki
+    vrsta: samo_u_prici
+    nadimci: []
+    opis: jedan od Boškićeva dva najbolja druga (Boban i Deki)
+
+  - id: snajka_torbica
+    ime: Snajka
+    vrsta: samo_u_prici
+    nadimci: [snaja]
+    opis: Torbičina snaja
+
+  - id: tast_torbica
+    ime: Tast
+    vrsta: samo_u_prici
+    nadimci: []
+    opis: Smiljkin otac, Ličanin; Torbičin tast
+
+  - id: medjed_momo
+    ime: Međed Momo
+    vrsta: samo_u_prici
+    nadimci: [Momo]
+    opis: medved iz Torbičinog zavičaja
+
+  - id: djed_djuro
+    ime: Đed Đuro
+    vrsta: samo_u_prici
+    nadimci: [Đuro]
+    opis: Torbičin deda
+
+  - id: kum_todor
+    ime: Kum Todor
+    vrsta: samo_u_prici
+    nadimci: [Todor]
+    opis: Torbičin kum, alkoholičar kao Žika
+
+  - id: mirko_cemes
+    ime: Mirko Cemeš
+    vrsta: samo_u_prici
+    nadimci: [Cemeš]
+    opis: Torbičin poslovođa
+
+  - id: gospodja_bugarski
+    ime: Gospođa Bugarski
+    vrsta: samo_u_prici
+    nadimci: []
+    opis: Čvarkovljeva ljubav
+
+  - id: radmila_kangrga
+    ime: Radmila Kangrga
+    vrsta: samo_u_prici
+    nadimci: []
+    opis: Čvarkovljeva bivša devojka
+
+  - id: sicer
+    ime: Šicer
+    vrsta: samo_u_prici
+    nadimci: []
+    opis: nacistički policajac (iz serije „Salaš u Malom Ritu“) koga Čvarkov predstavlja kao stvarnu osobu
+
+  - id: mama_mila
+    ime: Mama Mila
+    vrsta: samo_u_prici
+    nadimci: [Mila]
+    opis: Žikina mama koja živi u Majdanpeku
+
+  - id: buda_zlatni
+    ime: Budimir Radosavljević
+    vrsta: samo_u_prici
+    nadimci: [Buda Zlatni, Buda]
+    opis: Žikin rođak iz Buđanovaca
+
+  - id: zozon
+    ime: Zozon
+    vrsta: samo_u_prici
+    nadimci: []
+    opis: alkoholičar i Živanov najbolji prijatelj
+
+  - id: sanjika_feldeci
+    ime: Šanjika Feldeči
+    vrsta: samo_u_prici
+    nadimci: []
+    opis: Čvarkovljev kućni prijatelj, Mađar
+
+  - id: bela_mihalj
+    ime: Bela Mihalj
+    vrsta: samo_u_prici
+    nadimci: [Mihalj Bela, Bela Mihalji]
+    opis: Čvarkovljev zakleti neprijatelj, vlasnik konkurentske farme pilića
+
+  - id: hristo_bonev
+    ime: Hristo Bonev
+    vrsta: samo_u_prici
+    nadimci: []
+    opis: Čvarkovljev poslovni saradnik
+
+  - id: goce_iz_gostivara
+    ime: Goce vo Gostivar
+    vrsta: samo_u_prici
+    nadimci: [Goce]
+    opis: Čvarkovljev poslovni saradnik na makedonskom tržištu
+
+  - id: pop_jovica
+    ime: Pop Jovica
+    vrsta: samo_u_prici
+    nadimci: []
+    opis: Čvarkovljev prijatelj i saveznik
+
+  - id: majka_babina_sestra
+    ime: Majka
+    vrsta: samo_u_prici
+    nadimci: []
+    opis: babina sestra (baba Čvarkov)
+
+  - id: vida
+    ime: Vidosava
+    vrsta: samo_u_prici
+    nadimci: [Vida]
+    opis: prodavačica u piljari kod Daneta (Od Šljive do Banane)

@@ -1,0 +1,3 @@
+- Stranka koja se pominje u seriji je UJEBP (ne JVP).
+- Dreger je uređaj za merenje alkohola u dahu.
+- Neke epizode su nastavak prethodne; radnja tada može da se odvija van kancelarije.
