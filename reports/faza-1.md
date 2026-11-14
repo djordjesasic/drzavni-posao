@@ -133,7 +133,18 @@ predlozi.
     Šilović, Stevo Višekruna.
 - **Učitano u bazu:** 37 likova.
 
-**Treba tvoja odluka (protivrečno ili nejasno):**
+**Odluke vlasnika (14. 11.):**
+
+- Boškića je zaposlio brat.
+- Stevica je Đorđev brat (Wikipedia kaže „brat od strica“, važi tvoja verzija).
+- Sekereši (Dane) i Dane od Šljive do Banane su dva lika.
+- Mitar, Joja i Ildika za sada ostaju bez opisa.
+- Dodato je 29 novih likova sa Wikipedie (grupa `sa_wikipedije`); registar sada ima 66 likova.
+- Magda je prebačena u `samo_glas`, jer se na telefonu čuje samo njen glas.
+
+Faza 1 je odobrena, kao i preporuke za fazu 2 i Sonnet sa troškom preko 30 $.
+
+**Pitanja koja su bila postavljena:**
 
 1. **Ko je zaposlio Boškića?** Tvoj opis kaže otac (Boškić stariji), a Wikipedia (i tekst koji si
    prekopirao) kaže stariji brat.
