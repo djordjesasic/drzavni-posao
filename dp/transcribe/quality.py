@@ -58,8 +58,19 @@ def is_suspect(segments: list[dict[str, Any]], span_s: float) -> bool:
         return True
     if any(is_stretched(s) for s in segments):
         return True
-    chars = sum(len(t) for t in texts if _LETTER.search(t))
-    return span_s >= MIN_CHECK_S and chars / span_s < MIN_CHARS_PER_S
+    return too_little_text(segments, span_s)
+
+
+def too_little_text(segments: list[dict[str, Any]], span_s: float) -> bool:
+    """Swallowed speech: below MIN_CHARS_PER_S of the text that survives clean() (normal
+    dialogue is ~10-15 chars/s). Measured after clean(), because what clean() drops
+    (invented lines such as "Top N najboljih ...", duplicates) never reaches the
+    transcript: a piece made of such lines is a hole even if its raw text is long.
+    Pieces shorter than MIN_CHECK_S (the ~30 s intro/outro edges) may be pure music
+    and are not judged by text amount."""
+    if span_s < MIN_CHECK_S:
+        return False
+    return sum(len(s["text"]) for s in clean(segments)) / span_s < MIN_CHARS_PER_S
 
 
 def is_noise(text: str) -> bool:

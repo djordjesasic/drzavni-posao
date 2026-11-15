@@ -8,7 +8,7 @@ from typing import Any
 import numpy as np
 import yaml
 
-from dp.index.search import Vectors, search
+from dp.index.search import ACTIVE_EPISODE, Vectors, search
 
 
 def load_questions(path: Path) -> list[dict[str, Any]]:
@@ -29,7 +29,14 @@ def load_questions(path: Path) -> list[dict[str, Any]]:
 def evaluate(
     conn: sqlite3.Connection, path: Path, embed: Callable[[list[str]], np.ndarray]
 ) -> dict[str, Any]:
-    indexed = {r[0] for r in conn.execute("SELECT DISTINCT episode_id FROM windows")}
+    # Same rule as search: retired episodes and episodes without a video are not findable.
+    indexed = {
+        r[0]
+        for r in conn.execute(
+            "SELECT DISTINCT w.episode_id FROM windows w JOIN episodes e ON e.id = w.episode_id "
+            f"WHERE {ACTIVE_EPISODE}"
+        )
+    }
     vectors = Vectors(conn)
     rows = []
     for q in load_questions(path):

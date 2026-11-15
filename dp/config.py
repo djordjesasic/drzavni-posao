@@ -33,6 +33,8 @@ class Settings:
     index_enrich_model: str = "sonnet"  # whose description goes into the index
     index_window_s: float = 75.0
     index_hop_s: float = 40.0
+    # [worker] temperature limits in °C (dp.worker.Limits field names)
+    worker_limits: dict[str, float] = field(default_factory=dict)
 
     @property
     def audio_dir(self) -> Path:
@@ -79,6 +81,7 @@ def get_settings() -> Settings:
         index_enrich_model=raw.get("index", {}).get("enrich_model", "sonnet"),
         index_window_s=float(raw.get("index", {}).get("window_s", 75)),
         index_hop_s=float(raw.get("index", {}).get("hop_s", 40)),
+        worker_limits={k: float(v) for k, v in raw.get("worker", {}).items()},
     )
 
 

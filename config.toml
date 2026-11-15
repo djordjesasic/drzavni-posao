@@ -76,6 +76,15 @@ max_tokens = 16000
 # ":<DP_API_PORT>" (default 8090) appended.
 allowed_hosts = ["llmserver"]
 
+[worker]
+# The worker starts no new episode while a temperature reaches its limit, and goes on
+# once every reading is margin_c below it. Idle readings 2026-11-15: cpu 53, gpu 53,
+# nvme 66 (its second sensor 85).
+cpu_c = 90
+gpu_c = 95
+nvme_c = 80
+margin_c = 5
+
 [schedule]
 # Mass processing pauses daily in this window (Europe/Belgrade).
 pause_start = "18:55"

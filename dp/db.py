@@ -141,7 +141,57 @@ MIGRATIONS: list[str] = [
     -- rowid = windows.id; text is folded (Latin, no diacritics, lowercase).
     CREATE VIRTUAL TABLE windows_fts USING fts5(text_fold, tokenize='trigram');
     """,
+    # 9: a description belongs to the video it was made from. Existing rows (the pilot) are
+    # backfilled with the episode's video (the retired one for a retired episode), so a
+    # later re-point makes them stale.
+    """
+    ALTER TABLE enrichment ADD COLUMN video_id TEXT;
+    UPDATE enrichment SET video_id =
+        (SELECT coalesce(video_id, retired_video_id) FROM episodes
+         WHERE id = enrichment.episode_id);
+    """,
+    # 10: window ids must never be reused (search keeps ids in memory and in FTS rowids);
+    # rebuild with AUTOINCREMENT, ids copied unchanged so windows_fts rowids stay valid
+    """
+    CREATE TABLE windows_new (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        episode_id  INTEGER NOT NULL REFERENCES episodes(id),
+        kind        TEXT NOT NULL,
+        start_ms    INTEGER,
+        end_ms      INTEGER,
+        text        TEXT NOT NULL,
+        embedding   BLOB NOT NULL
+    );
+    INSERT INTO windows_new (id, episode_id, kind, start_ms, end_ms, text, embedding)
+        SELECT id, episode_id, kind, start_ms, end_ms, text, embedding FROM windows;
+    DROP TABLE windows;
+    ALTER TABLE windows_new RENAME TO windows;
+    CREATE INDEX windows_episode ON windows(episode_id);
+    """,
+    # 11: phase 2 worker – retry bookkeeping per step, and the machine's health log
+    """
+    ALTER TABLE episode_steps ADD COLUMN attempts INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE episode_steps ADD COLUMN retry_after TEXT;  -- UTC; failed step waits until then
+    CREATE TABLE worker_health (
+        at          TEXT NOT NULL DEFAULT (datetime('now')),  -- UTC
+        cpu_c       REAL,
+        gpu_c       REAL,
+        nvme_c      REAL,
+        state       TEXT NOT NULL,     -- working | hot | paused | idle
+        episode_id  INTEGER
+    );
+    CREATE INDEX worker_health_at ON worker_health(at);
+    """,
 ]
+
+
+def active_video_id(conn: sqlite3.Connection, episode_id: int) -> str | None:
+    """Video of an episode that exists, is not retired and has a video; else None. The one
+    definition of an active episode (search.py and eval repeat it in SQL)."""
+    row = conn.execute(
+        "SELECT video_id FROM episodes WHERE id=? AND retired=0", (episode_id,)
+    ).fetchone()
+    return row[0] if row else None
 
 
 def connect(path: Path, *, readonly: bool = False) -> sqlite3.Connection:

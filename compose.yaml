@@ -1,15 +1,17 @@
 name: drzavni-posao
 
+x-env: &env
+  TZ: Europe/Belgrade
+  DP_CONFIG: /app/config.toml
+  HOME: /data/home
+  RUFF_CACHE_DIR: /tmp/ruff-cache
+  # Same value as uvicorn's --port below, so allowed_hosts always matches the bind port.
+  DP_API_PORT: "${DP_API_PORT:-8090}"
+
 x-common: &common
   image: drzavni-posao:latest
   user: "1000:1000"
-  environment:
-    TZ: Europe/Belgrade
-    DP_CONFIG: /app/config.toml
-    HOME: /data/home
-    RUFF_CACHE_DIR: /tmp/ruff-cache
-    # Same value as uvicorn's --port below, so allowed_hosts always matches the bind port.
-    DP_API_PORT: "${DP_API_PORT:-8090}"
+  environment: *env
   env_file:
     - path: .env
       required: false
@@ -26,6 +28,10 @@ services:
     # up yet at boot, uvicorn exits and the restart policy retries until the bind works
     # (a published port would instead leave the container never started).
     network_mode: host
+    environment:
+      <<: *env
+      # Host network: the embed service's name does not resolve here, its port does.
+      DP_EMBED_URL: http://127.0.0.1:8091
     command:
       - uvicorn
       - dp.search.app:app

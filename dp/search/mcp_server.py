@@ -1,4 +1,4 @@
-"""MCP tools over the catalog (Streamable HTTP, mounted by dp.search.app)."""
+"""MCP tools over the catalog and the content index (Streamable HTTP, mounted by dp.search.app)."""
 
 import sqlite3
 from collections.abc import Iterator
@@ -8,16 +8,28 @@ from typing import Any
 from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 
-from dp.search import catalog
+from dp.search import catalog, content
 from dp.search.deps import DatabaseNotReady, open_db
 
 INSTRUCTIONS = """\
-Baza znanja serije „Državni posao“. Brojeve epizoda, specijala, sezona i raspon
-datuma daje alat catalog_info. Epizode imaju redni broj; specijali (kind='special')
-nemaju redni broj i imaju id od 10001 naviše.
-Faza 0: dostupni su samo katalog epizoda (broj, sezona, naslov, datum, YouTube link)
-i registar likova. Transkripti i opisi epizoda još ne postoje, pa pretraga po sadržaju
-epizode još ne radi; pretražuju se samo naslovi.
+Baza znanja serije „Državni posao“: katalog svih epizoda, registar likova i, za obrađene
+epizode, transkript (sa govornikom prepoznatim po glasu) i opis epizode.
+
+Kad korisnik opiše epizodu po sećanju:
+1. Razloži opis na signale: ko govori ili šta radi, upečatljive reči ili replike, mesta,
+   predmeti, koga neko imitira. Imena proveri alatom find_character.
+2. Pozovi search_episodes više puta, sa različitim kratkim upitima (jedan signal ili
+   replika po upitu), ne samo sa celim opisom.
+3. Za najbolje kandidate pročitaj get_transcript_excerpt oko vraćenog minuta i proveri da
+   li se zaista dešava ono što korisnik opisuje.
+4. Vrati najviše 3 kandidata: broj i naslov epizode, minut, YouTube link na taj minut i
+   kratko obrazloženje. Ako nijedan kandidat ne odgovara, reci to.
+
+Pretraga po sadržaju pokriva samo obrađene epizode (njihov broj daje search_episodes u
+polju indexed_episodes); ostale se mogu naći samo po naslovu (search_titles). Transkript
+je automatski i ima greške u rečima i imenima, pa traži i po smislu, ne samo doslovno.
+Glas daje glumca, ne lik: glumac Čvarkova igra i Stevicu, glumac Boškića i Boškića
+starijeg, i svi imitiraju druge. Specijali nemaju redni broj i imaju id od 10001 naviše.
 """
 
 mcp = MCPServer(name="drzavni-posao", instructions=INSTRUCTIONS)
@@ -34,7 +46,27 @@ def _db() -> Iterator[sqlite3.Connection]:
 
 
 @mcp.tool()
-def search_episodes(
+def search_episodes(query: str, limit: int = 10) -> dict[str, Any]:
+    """Search episodes by content: what happens, what is said, who tells what story.
+
+    Searches the transcripts and episode descriptions by words (diacritics-insensitive)
+    and by meaning. Use short queries, one memory or quote each, and run several.
+    Returns indexed_episodes (how many episodes are searchable) and results, best first:
+    episode, title, season, air date, minute and YouTube link of the best matching
+    moment, what matched (transkript, opis, priča, imitacija, replika), a snippet and a score.
+    limit is 1-20.
+    """
+    if not query.strip():
+        raise ToolError("query must not be empty")
+    with _db() as conn:
+        return {
+            "indexed_episodes": content.indexed_count(conn),
+            "results": content.search_content(conn, query, max(1, min(limit, 20))),
+        }
+
+
+@mcp.tool()
+def search_titles(
     query: str = "", season: int | None = None, year: int | None = None, limit: int = 20
 ) -> list[dict[str, Any]]:
     """Search episode titles (case- and diacritics-insensitive; all words must match).
@@ -52,7 +84,9 @@ def search_episodes(
 
 @mcp.tool()
 def get_episode(episode: int) -> dict[str, Any] | None:
-    """Get one episode by its running number (e.g. 2036).
+    """Get one episode by its running number (e.g. 2036), with its description when the
+    episode has been processed (summary, topics, characters, stories with their minute,
+    imitations, quotes); description is null otherwise.
 
     New Year and other specials have no running number; their ids start at 10001
     and the result has kind='special'.
@@ -60,7 +94,26 @@ def get_episode(episode: int) -> dict[str, Any] | None:
     if not 1 <= episode <= catalog.EPISODE_ID_MAX:
         return None
     with _db() as conn:
-        return catalog.get_episode(conn, episode)
+        ep = catalog.get_episode(conn, episode)
+        if ep is not None:
+            ep["description"] = content.description(conn, episode)
+        return ep
+
+
+@mcp.tool()
+def get_transcript_excerpt(
+    episode: int, start_s: int = 0, end_s: int | None = None
+) -> dict[str, Any] | None:
+    """Transcript lines of an episode between two times in seconds (at most 5 minutes
+    per call; default: 5 minutes from start_s), each with time m:ss, speaker found by
+    voice (a trailing "?" means unsure, null means too short or not one of the three
+    main actors) and text, plus a YouTube link to start_s. None if the episode has no
+    transcript yet. The transcript is automatic and has recognition errors.
+    """
+    if not 1 <= episode <= catalog.EPISODE_ID_MAX:
+        return None
+    with _db() as conn:
+        return content.transcript_excerpt(conn, episode, start_s, end_s)
 
 
 @mcp.tool()

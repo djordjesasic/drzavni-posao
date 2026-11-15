@@ -1,5 +1,6 @@
 """Hybrid search: FTS5 (words) + vectors (meaning), fused per episode with RRF."""
 
+import logging
 import re
 import sqlite3
 from collections.abc import Callable
@@ -9,7 +10,12 @@ import numpy as np
 
 from dp.text import fold
 
+log = logging.getLogger(__name__)
+
 RRF_K = 60
+# Windows of active episodes only, applied at the source so retired ones neither take
+# candidate slots nor memory (the same active-episode rule as dp.db.active_video_id).
+ACTIVE_EPISODE = "e.retired = 0 AND e.video_id IS NOT NULL"  # e = episodes
 PER_LIST = 50  # windows taken from each list before fusion
 _WORD = re.compile(r"[a-z0-9]{3,}")
 # Very common words that only add noise to an OR query.
@@ -30,8 +36,9 @@ def _fts(conn: sqlite3.Connection, query: str) -> list[int]:
     if not q:
         return []
     rows = conn.execute(
-        "SELECT rowid FROM windows_fts WHERE windows_fts MATCH ? ORDER BY bm25(windows_fts) "
-        "LIMIT ?",
+        "SELECT windows_fts.rowid FROM windows_fts "
+        "JOIN windows w ON w.id = windows_fts.rowid JOIN episodes e ON e.id = w.episode_id "
+        f"WHERE windows_fts MATCH ? AND {ACTIVE_EPISODE} ORDER BY bm25(windows_fts) LIMIT ?",
         (q, PER_LIST),
     )
     return [r[0] for r in rows]
@@ -41,7 +48,10 @@ class Vectors:
     """All window vectors in memory (tens of thousands x 1024 floats: fine)."""
 
     def __init__(self, conn: sqlite3.Connection) -> None:
-        rows = conn.execute("SELECT id, embedding FROM windows ORDER BY id").fetchall()
+        rows = conn.execute(
+            "SELECT w.id, w.embedding FROM windows w JOIN episodes e ON e.id = w.episode_id "
+            f"WHERE {ACTIVE_EPISODE} ORDER BY w.id"
+        ).fetchall()
         self.ids = np.array([r[0] for r in rows], dtype=np.int64)
         self.m = (
             np.stack([np.frombuffer(r[1], dtype=np.float32) for r in rows])
@@ -66,7 +76,12 @@ def search(
 ) -> list[dict[str, Any]]:
     """Episodes ranked by reciprocal rank fusion of the best window per list."""
     vectors = vectors or Vectors(conn)
-    lists = {"words": _fts(conn, query), "meaning": vectors.top(embed([query])[0])}
+    try:
+        meaning = vectors.top(embed([query])[0])
+    except Exception:  # embed service down: words alone still find quotes and names
+        log.warning("embedding the query failed; searching by words only", exc_info=True)
+        meaning = []
+    lists = {"words": _fts(conn, query), "meaning": meaning}
     score: dict[int, float] = {}
     # episode -> (rank, no time, window id): the window shown is the best ranked one,
     # preferring one with a time (a summary hit links to the start of the episode).
@@ -75,8 +90,14 @@ def search(
     wanted = {w for ids in lists.values() for w in ids}
     if wanted:
         marks = ",".join("?" * len(wanted))
+        # The candidate ids come from three reads that are not atomic: a worker may
+        # re-index an episode in between (or after Vectors was loaded). So an id can be
+        # missing here, and an episode retired since then is dropped by the join
+        # (the same active-episode rule as dp.db.active_video_id).
         for r in conn.execute(
-            f"SELECT id, episode_id, kind, start_ms, text FROM windows WHERE id IN ({marks})",
+            "SELECT w.id, w.episode_id, w.kind, w.start_ms, w.text FROM windows w "
+            "JOIN episodes e ON e.id = w.episode_id "
+            f"WHERE w.id IN ({marks}) AND {ACTIVE_EPISODE}",
             list(wanted),
         ):
             meta[r["id"]] = r
@@ -84,6 +105,8 @@ def search(
         seen: set[int] = set()
         rank = 0
         for wid in ids:
+            if wid not in meta:  # gone or not searchable: not counted in the ranks
+                continue
             eid = meta[wid]["episode_id"]
             if eid in seen:  # only the best window of an episode counts in each list
                 continue

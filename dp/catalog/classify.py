@@ -11,6 +11,8 @@ import re
 import sqlite3
 from dataclasses import dataclass, field
 
+from dp.index.store import delete_windows
+
 EPISODE_RE = re.compile(
     r"^DRŽAVNI POSAO\s*(?:\[HQ\])?\s*-\s*Ep\.\s*(?P<num>\d+)\s*:\s*(?P<title>.+?)\s*"
     r"\((?P<d>\d{1,2})\.(?P<m>\d{1,2})\.(?P<y>\d{4})\.?\)(?:\s*\([^)]*\))?\s*$",
@@ -190,6 +192,11 @@ def build_episodes(conn: sqlite3.Connection) -> BuildResult:
             )
             # Steps were done on another video: drop them so processing is redone.
             if eid in previous and previous[eid] != vid:
+                # Derived data belongs to the old video too. enrichment is kept on
+                # purpose (paid LLM output); its video_id no longer equals episodes.video_id, so
+                # enrich and index ignore it.
+                delete_windows(conn, eid)
+                conn.execute("DELETE FROM segments WHERE episode_id=?", (eid,))
                 cur = conn.execute("DELETE FROM episode_steps WHERE episode_id=?", (eid,))
                 if cur.rowcount:
                     steps_reset.append(eid)

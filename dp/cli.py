@@ -3,14 +3,14 @@
 import argparse
 import json
 import logging
+import signal
 import sqlite3
-import time
 from pathlib import Path
 
-from dp import pilot, pipeline
+from dp import pilot, pipeline, worker
 from dp.catalog import characters, classify, export, youtube
 from dp.config import get_settings
-from dp.db import connect, migrate
+from dp.db import active_video_id, connect, migrate
 from dp.enrich import run as enrich_run
 from dp.eval import run as eval_run
 from dp.index import embed as embed_client
@@ -70,8 +70,18 @@ def cmd_catalog_import(args: argparse.Namespace) -> None:
     print(f"imported {n} videos, {gone} missing from the channel")
 
 
-def cmd_catalog_build(_: argparse.Namespace) -> None:
+def cmd_catalog_build(args: argparse.Namespace) -> None:
     conn = _db()
+    busy = conn.execute(
+        "SELECT episode_id, step FROM episode_steps WHERE status='running' "
+        "AND updated_at > datetime('now', '-6 hours')"
+    ).fetchall()
+    if busy and not args.force:
+        # A re-point while a step runs leaves the old video's data behind (review, phase 1).
+        raise SystemExit(
+            f"steps are running {[tuple(b) for b in busy]}: stop the worker first "
+            "(scripts/worker.sh stop), or use --force"
+        )
     r = classify.build_episodes(conn)
     print(f"episodes: {r.episodes}, specials: {r.specials}")
     print(f"videos by kind: {dict(sorted(r.by_kind.items()))}")
@@ -138,9 +148,9 @@ def cmd_pilot_select(_: argparse.Namespace) -> None:
         ep = conn.execute(
             "SELECT season, title, duration_s FROM episodes WHERE id=?", (p.episode_id,)
         ).fetchone()
-        print(
-            f"{p.grp:17} {p.episode_id:6}  s{ep['season']:<3} {ep['duration_s']:5}s  {ep['title']}"
-        )
+        season = "-" if ep["season"] is None else ep["season"]
+        dur = "-" if ep["duration_s"] is None else ep["duration_s"]
+        print(f"{p.grp:17} {p.episode_id:6}  s{season!s:<3} {dur!s:>5}s  {ep['title']}")
     print(f"{len(chosen)} pilot episodes stored")
 
 
@@ -150,6 +160,13 @@ def _episode_ids(conn: sqlite3.Connection, args: argparse.Namespace) -> list[int
     return [r[0] for r in conn.execute("SELECT episode_id FROM pilot ORDER BY episode_id")]
 
 
+def _download_pending(conn: sqlite3.Connection, eid: int, force: bool) -> bool:
+    """True when run_step will really hit YouTube for this episode."""
+    vid = active_video_id(conn, eid)
+    # No active video: run_episode rejects it before any request.
+    return vid is not None and pipeline.will_run(conn, eid, "download", vid, force)
+
+
 def cmd_run(args: argparse.Namespace) -> None:
     s = get_settings()
     conn = _db()
@@ -157,22 +174,36 @@ def cmd_run(args: argparse.Namespace) -> None:
     unknown = set(steps) - set(pipeline.STEPS)
     if unknown:
         raise SystemExit(f"unknown steps: {sorted(unknown)}; known: {pipeline.STEPS}")
+    if args.rebuild_index and "index" not in steps:
+        # Otherwise it would do nothing and exit 0, leaving every vector from the old model.
+        raise SystemExit("--rebuild-index only acts on the index step: add --steps index")
     ids = _episode_ids(conn, args)[: args.limit or None]
     failed = []
     for n, eid in enumerate(ids):
-        downloaded = False
+        attempted = False
         try:
-            res = transcribe_steps.run_episode(s, conn, eid, steps, force=args.force)
-            downloaded = res.get("download") is not None
+            # A failed download is a request to YouTube too, so it also needs the pause.
+            attempted = "download" in steps and _download_pending(conn, eid, args.force)
+            res = transcribe_steps.run_episode(
+                s, conn, eid, steps, force=args.force, rebuild_index=args.rebuild_index
+            )
             print(f"{eid}: {json.dumps(res, ensure_ascii=False)}", flush=True)
         except Exception as e:  # keep going; the failure is recorded in episode_steps
             log.exception("episode %s failed", eid)
             failed.append(eid)
             print(f"{eid}: FAILED {type(e).__name__}: {e}", flush=True)
-        if downloaded and n < len(ids) - 1:
+        if attempted and n < len(ids) - 1:
             transcribe_steps.polite_pause(s)
     if failed:
         raise SystemExit(f"{len(failed)} episode(s) failed: {failed}")
+
+
+def cmd_label_transcripts(_: argparse.Namespace) -> None:
+    res = transcribe_steps.label_transcripts(get_settings(), _db())
+    print(f"labelled: {res['labelled']}, already labelled: {res['already_labelled']}, "
+          f"skipped: {len(res['skipped'])}")  # fmt: skip
+    for name, reason in res["skipped"].items():
+        print(f"  skipped {name}: {reason}")
 
 
 def cmd_enrich(args: argparse.Namespace) -> None:
@@ -226,11 +257,15 @@ def cmd_backup(args: argparse.Namespace) -> None:
     print(f"backup written to {args.path}")
 
 
-def cmd_worker(_: argparse.Namespace) -> None:
-    # Phase 0: no processing steps exist yet; idle so the container stays inspectable.
-    log.info("worker started; no processing steps defined yet")
-    while True:
-        time.sleep(3600)
+def cmd_worker(args: argparse.Namespace) -> None:
+    def stop(signum: int, _frame: object) -> None:
+        # docker stop sends SIGTERM to PID 1: leave cleanly, the step goes back to pending.
+        raise SystemExit(f"signal {signum}")
+
+    signal.signal(signal.SIGTERM, stop)
+    s = get_settings()
+    res = worker.run(s, _db(), limit=args.limit or None, limits=worker.Limits(**s.worker_limits))
+    print(json.dumps(res))
 
 
 def main() -> None:
@@ -246,7 +281,9 @@ def main() -> None:
         "--force", action="store_true", help="accept even if many videos become missing"
     )
     imp.set_defaults(func=cmd_catalog_import)
-    sub.add_parser("catalog-build").set_defaults(func=cmd_catalog_build)
+    cb = sub.add_parser("catalog-build")
+    cb.add_argument("--force", action="store_true", help="even while steps are running")
+    cb.set_defaults(func=cmd_catalog_build)
     sub.add_parser("catalog-stats").set_defaults(func=cmd_catalog_stats)
     sub.add_parser("pilot-select").set_defaults(func=cmd_pilot_select)
     run = sub.add_parser("run")
@@ -254,7 +291,19 @@ def main() -> None:
     run.add_argument("--episodes", help="comma-separated ids; default: the pilot set")
     run.add_argument("--limit", type=int, default=0)
     run.add_argument("--force", action="store_true", help="redo steps already done")
+    run.add_argument(
+        "--rebuild-index",
+        action="store_true",
+        help="recompute all embeddings; use after changing the embedding model. Needs index "
+        "in --steps (e.g. --steps index --rebuild-index) and runs it even if done. "
+        "--force alone updates the index incrementally",
+    )
     run.set_defaults(func=cmd_run)
+    sub.add_parser(
+        "label-transcripts",
+        help="one-off: write video_id into pilot transcripts whose transcribe step is done "
+        "for the episode's current video (safe to repeat)",
+    ).set_defaults(func=cmd_label_transcripts)
     en = sub.add_parser("enrich", help="describe episodes with an LLM ([enrich.models])")
     en.add_argument("--model", required=True, help="config name, e.g. qwen or glm")
     en.add_argument("--episodes", help="comma-separated ids; default: the pilot set")
@@ -277,7 +326,9 @@ def main() -> None:
     b = sub.add_parser("backup")
     b.add_argument("path")
     b.set_defaults(func=cmd_backup)
-    sub.add_parser("worker").set_defaults(func=cmd_worker)
+    wk = sub.add_parser("worker", help="phase 2: process episodes until all are done")
+    wk.add_argument("--limit", type=int, default=0, help="stop after this many episodes")
+    wk.set_defaults(func=cmd_worker)
     args = p.parse_args()
     args.func(args)
 

@@ -1,4 +1,7 @@
 import json
+import sqlite3
+import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -29,6 +32,10 @@ def conn(tmp_path: Path):  # type: ignore[no-untyped-def]
         [(0, 5000, 7000, "Ovčija glava!", "Ovčija glava!", "ovcija glava!"),
          (1, 65000, 67000, "Torbice, šta ti je?", "Torbice, šta ti je?", "torbice")],
     )  # fmt: skip
+    c.execute(
+        "INSERT INTO episode_steps (episode_id, step, status, video_id) "
+        "VALUES (254, 'transcribe', 'done', 'v1'), (254, 'speakers', 'done', 'v1')"
+    )
     c.commit()
     return c
 
@@ -160,3 +167,258 @@ def test_enrich_records_failure(
     assert info is not None and "error" in info
     row = conn.execute("SELECT status, raw FROM enrichment").fetchone()
     assert (row["status"], row["raw"]) == ("failed", "nije json")
+
+
+def _good_answer() -> dict[str, Any]:
+    return {k: [] for k in prompt.SCHEMA} | {
+        "summary": "x",
+        "opening_scene": {},
+        "current_event": None,
+    }
+
+
+def test_enrich_is_done_only_for_the_same_video(
+    tmp_path: Path,
+    conn: sqlite3.Connection,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[int] = []
+
+    def fake_chat(cfg: dict[str, Any], messages: list[dict[str, str]], **kw: Any) -> client.Reply:
+        calls.append(1)
+        return client.Reply(json.dumps(_good_answer()), 10, 5)
+
+    monkeypatch.setattr(client, "chat", fake_chat)
+    s = _settings(tmp_path)
+    enrich_run.enrich_episode(s, conn, 254, "fake")
+    assert conn.execute("SELECT video_id FROM enrichment").fetchone()[0] == "v1"
+    assert enrich_run.enrich_episode(s, conn, 254, "fake") is None
+    assert len(calls) == 1
+    # The episode id now points to another video: the old description is stale.
+    conn.execute("INSERT INTO videos (video_id, title, raw) VALUES ('v2', 't', '{}')")
+    conn.execute("UPDATE episodes SET video_id='v2' WHERE id=254")
+    conn.execute("UPDATE episode_steps SET video_id='v2'")  # transcribe and speakers re-done
+    conn.execute("UPDATE enrichment SET video_id='v1'")
+    assert enrich_run.enrich_episode(s, conn, 254, "fake") is not None
+    assert len(calls) == 2
+    assert conn.execute("SELECT video_id FROM enrichment").fetchone()[0] == "v2"
+
+
+def test_null_video_id_row_is_not_valid(
+    tmp_path: Path,
+    conn: sqlite3.Connection,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        client, "chat", lambda cfg, m, **kw: client.Reply(json.dumps(_good_answer()), 1, 1)
+    )
+    conn.execute(
+        "INSERT INTO enrichment (episode_id, model, prompt_version, status, data) "
+        "VALUES (254, 'fake', ?, 'done', '{}')",
+        (prompt.PROMPT_VERSION,),
+    )
+    assert enrich_run.valid_enrichment(conn, 254, "fake", "v1") is None
+    assert enrich_run.enrich_episode(_settings(tmp_path), conn, 254, "fake") is not None
+
+
+def test_unknown_episode_returns_error_without_row(
+    tmp_path: Path,
+    conn: sqlite3.Connection,
+) -> None:
+    info = enrich_run.enrich_episode(_settings(tmp_path), conn, 9999, "fake")
+    assert info is not None and "9999" in info["error"]
+    assert conn.execute("SELECT COUNT(*) FROM enrichment").fetchone()[0] == 0
+
+
+def test_enrich_without_transcript_is_recorded_not_raised(
+    tmp_path: Path,
+    conn: sqlite3.Connection,
+) -> None:
+    conn.execute("DELETE FROM segments")
+    info = enrich_run.enrich_episode(_settings(tmp_path), conn, 254, "fake")
+    assert info is not None and "error" in info
+    assert conn.execute("SELECT status FROM enrichment").fetchone()[0] == "failed"
+
+
+def test_failed_rerun_keeps_good_result(
+    tmp_path: Path,
+    conn: sqlite3.Connection,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    replies = iter([json.dumps(_good_answer()), "nije json"])
+    monkeypatch.setattr(client, "chat", lambda cfg, m, **kw: client.Reply(next(replies), 1, 1))
+    s = _settings(tmp_path)
+    assert "error" not in (enrich_run.enrich_episode(s, conn, 254, "fake") or {})
+    info = enrich_run.enrich_episode(s, conn, 254, "fake", force=True)
+    assert info is not None and "error" in info
+    row = conn.execute("SELECT status, data FROM enrichment").fetchone()
+    assert row["status"] == "done" and json.loads(row["data"])["summary"] == "x"
+
+
+def test_failure_never_overwrites_a_done_result_of_another_video(
+    tmp_path: Path,
+    conn: sqlite3.Connection,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    conn.execute(
+        "INSERT INTO enrichment (episode_id, model, prompt_version, status, data, video_id) "
+        "VALUES (254, 'fake', ?, 'done', '{}', 'old')",
+        (prompt.PROMPT_VERSION,),
+    )
+    replies = iter(["nije json", json.dumps(_good_answer())])
+    monkeypatch.setattr(client, "chat", lambda cfg, m, **kw: client.Reply(next(replies), 1, 1))
+    info = enrich_run.enrich_episode(_settings(tmp_path), conn, 254, "fake")
+    assert info is not None and "error" in info
+    row = conn.execute("SELECT status, video_id FROM enrichment").fetchone()
+    assert (row["status"], row["video_id"]) == ("done", "old")
+    # Only a success replaces it.
+    enrich_run.enrich_episode(_settings(tmp_path), conn, 254, "fake")
+    row = conn.execute("SELECT status, video_id FROM enrichment").fetchone()
+    assert (row["status"], row["video_id"]) == ("done", "v1")
+
+
+def test_stale_description_is_redone_without_force_and_kept_on_failure(
+    tmp_path: Path,
+    conn: sqlite3.Connection,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    conn.execute(
+        "INSERT INTO enrichment (episode_id, model, prompt_version, status, data, video_id) "
+        "VALUES (254, 'fake', ?, 'stale', '{\"summary\": \"staro\"}', 'v1')",
+        (prompt.PROMPT_VERSION,),
+    )
+    conn.commit()
+    replies = iter(["nije json", json.dumps(_good_answer())])
+    monkeypatch.setattr(client, "chat", lambda cfg, m, **kw: client.Reply(next(replies), 1, 1))
+    s = _settings(tmp_path)
+    # No --force: a stale description is not "done", so the model is called.
+    info = enrich_run.enrich_episode(s, conn, 254, "fake")
+    assert info is not None and "error" in info
+    row = conn.execute("SELECT status, data FROM enrichment").fetchone()
+    assert row["status"] == "stale" and "staro" in row["data"]  # the failure kept it
+    info = enrich_run.enrich_episode(s, conn, 254, "fake")
+    assert info is not None and "error" not in info
+    assert conn.execute("SELECT status FROM enrichment").fetchone()[0] == "done"
+
+
+def test_retired_or_videoless_episode_is_not_sent_to_the_model(
+    tmp_path: Path,
+    conn: sqlite3.Connection,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def boom(*a: Any, **kw: Any) -> client.Reply:
+        raise AssertionError("model must not be called")
+
+    monkeypatch.setattr(client, "chat", boom)
+    s = _settings(tmp_path)
+    conn.execute("UPDATE episodes SET retired=1, retired_video_id=video_id, video_id=NULL")
+    info = enrich_run.enrich_episode(s, conn, 254, "fake")
+    assert info is not None and "error" in info
+    conn.execute("UPDATE episodes SET retired=0")  # active but without a video
+    info = enrich_run.enrich_episode(s, conn, 254, "fake")
+    assert info is not None and "error" in info
+    assert conn.execute("SELECT COUNT(*) FROM enrichment").fetchone()[0] == 0
+
+
+def test_catalog_layer_import_stays_light() -> None:
+    # dp.search.app needs the server stack; its catalog layer is what must stay light.
+    code = (
+        "import sys, dp.catalog.classify, dp.search.catalog; "
+        "bad = [m for m in ('numpy', 'dp.index.build', 'dp.transcribe.speakers', "
+        "'dp.enrich.claude', 'anthropic') if m in sys.modules]; print(bad)"
+    )
+    out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
+    assert out.returncode == 0, out.stderr
+    assert out.stdout.strip() == "[]"
+
+
+def test_index_build_import_does_not_pull_in_llm_clients() -> None:
+    code = (
+        "import sys, dp.index.build; "
+        "bad = [m for m in ('dp.enrich.claude', 'dp.enrich.client', 'anthropic') "
+        "if m in sys.modules]; print(bad)"
+    )
+    out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
+    assert out.returncode == 0, out.stderr
+    assert out.stdout.strip() == "[]"
+
+
+def test_check_reports_bad_shapes(conn: sqlite3.Connection) -> None:
+    data = _good_answer() | {
+        "places": "Torbica",
+        "quotes": ["not an object"],
+        "stories": [{"about": "Torbica"}],
+    }
+    assert enrich_run.check(conn, data)["bad_shape"] == ["quotes", "places", "stories.about"]
+    assert enrich_run.check(conn, _good_answer())["bad_shape"] == []
+
+
+def test_successful_enrichment_marks_index_step_pending(
+    tmp_path: Path,
+    conn: sqlite3.Connection,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        client, "chat", lambda cfg, m, **kw: client.Reply(json.dumps(_good_answer()), 1, 1)
+    )
+    s = _settings(tmp_path)
+    s.enrich_models["other"] = {"base_url": "http://x/v1", "model": "m"}
+    conn.execute(
+        "INSERT INTO episode_steps (episode_id, step, status) VALUES (254, 'index', 'done')"
+    )
+    index = "SELECT status FROM episode_steps WHERE step='index'"
+    enrich_run.enrich_episode(s, conn, 254, "other")  # not the model that feeds the index
+    assert conn.execute(index).fetchone()[0] == "done"
+    s.enrich_models[s.index_enrich_model] = {"base_url": "http://x/v1", "model": "m"}
+    enrich_run.enrich_episode(s, conn, 254, s.index_enrich_model)
+    assert conn.execute(index).fetchone()[0] == "pending"
+    # No step row: nothing is created.
+    conn.execute("DELETE FROM episode_steps WHERE step='index'")
+    enrich_run.enrich_episode(s, conn, 254, s.index_enrich_model, force=True)
+    assert conn.execute(index).fetchone() is None
+
+
+def test_enrich_needs_transcript_of_the_current_video(
+    tmp_path: Path,
+    conn: sqlite3.Connection,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def boom(*a: Any, **kw: Any) -> client.Reply:
+        raise AssertionError("the model must not be called")
+
+    monkeypatch.setattr(client, "chat", boom)
+    s = _settings(tmp_path)
+    # Re-pointed, the segments still belong to the old video's transcript.
+    conn.execute("INSERT INTO videos (video_id, title, raw) VALUES ('v2', 't', '{}')")
+    conn.execute("UPDATE episodes SET video_id='v2' WHERE id=254")
+    conn.commit()
+    info = enrich_run.enrich_episode(s, conn, 254, "fake")
+    assert info == {
+        "model": "fake",
+        "error": "episode 254: step 'transcribe' is not done for the current video",
+    }
+    # Not done at all (e.g. failed or pending): same.
+    conn.execute("UPDATE episode_steps SET video_id='v2', status='pending'")
+    conn.commit()
+    assert "error" in (enrich_run.enrich_episode(s, conn, 254, "fake") or {})
+    assert conn.execute("SELECT COUNT(*) FROM enrichment").fetchone()[0] == 0
+
+
+def test_enrich_needs_speaker_tags(
+    tmp_path: Path,
+    conn: sqlite3.Connection,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def boom(*a: Any, **kw: Any) -> client.Reply:
+        raise AssertionError("the model must not be called")
+
+    monkeypatch.setattr(client, "chat", boom)
+    # A forced transcribe changed the text: speakers is pending, actor columns are empty.
+    conn.execute("UPDATE episode_steps SET status='pending' WHERE step='speakers'")
+    conn.commit()
+    info = enrich_run.enrich_episode(_settings(tmp_path), conn, 254, "fake", force=True)
+    assert info == {
+        "model": "fake",
+        "error": "episode 254: step 'speakers' is not done for the current video",
+    }
+    assert conn.execute("SELECT COUNT(*) FROM enrichment").fetchone()[0] == 0

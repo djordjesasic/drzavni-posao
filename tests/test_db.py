@@ -88,3 +88,64 @@ def test_failed_migration_rolls_back(tmp_path: Path, monkeypatch: pytest.MonkeyP
     with conn:
         conn.execute("INSERT INTO videos (video_id, title, raw) VALUES ('v1', 't', '{}')")
     assert conn.execute("SELECT count(*) FROM videos").fetchone()[0] == 1
+
+
+def test_migrations_9_10_backfill_video_and_keep_window_ids(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    conn = connect(tmp_path / "t.sqlite")
+    monkeypatch.setattr(dp.db, "MIGRATIONS", MIGRATIONS[:8])
+    migrate(conn)
+    conn.execute("INSERT INTO videos (video_id, title, raw) VALUES ('v1', 't', '{}')")
+    conn.execute("INSERT INTO episodes (id, video_id, title) VALUES (1, 'v1', 'E')")
+    conn.execute(
+        "INSERT INTO enrichment (episode_id, model, prompt_version, status, data) "
+        "VALUES (1, 'm', 1, 'done', '{}')"
+    )
+    # A retired episode: video_id is NULL, its old video is in retired_video_id.
+    conn.execute("INSERT INTO videos (video_id, title, raw) VALUES ('v0', 't', '{}')")
+    conn.execute(
+        "INSERT INTO episodes (id, video_id, title, retired, retired_video_id) "
+        "VALUES (2, NULL, 'R', 1, 'v0')"
+    )
+    conn.execute(
+        "INSERT INTO enrichment (episode_id, model, prompt_version, status, data) "
+        "VALUES (2, 'm', 1, 'done', '{}')"
+    )
+    for i in (1, 2, 5):
+        conn.execute(
+            "INSERT INTO windows (id, episode_id, kind, text, embedding) "
+            "VALUES (?, 1, 'k', 't', x'00')",
+            (i,),
+        )
+        conn.execute("INSERT INTO windows_fts (rowid, text_fold) VALUES (?, 'word')", (i,))
+    conn.commit()
+    monkeypatch.setattr(dp.db, "MIGRATIONS", MIGRATIONS)
+    assert migrate(conn) == len(MIGRATIONS)
+    # Backfilled: the pilot row belongs to the video the episode points to now.
+    assert conn.execute("SELECT video_id FROM enrichment WHERE episode_id=1").fetchone()[0] == "v1"
+    assert conn.execute("SELECT video_id FROM enrichment WHERE episode_id=2").fetchone()[0] == "v0"
+    assert [r[0] for r in conn.execute("SELECT id FROM windows ORDER BY id")] == [1, 2, 5]
+    assert (
+        conn.execute("SELECT COUNT(*) FROM windows_fts WHERE rowid IN (1, 2, 5)").fetchone()[0] == 3
+    )
+    conn.execute("DELETE FROM windows WHERE id=5")
+    cur = conn.execute(
+        "INSERT INTO windows (episode_id, kind, text, embedding) VALUES (1, 'k', 't', x'00')"
+    )
+    assert cur.lastrowid == 6  # id 5 is not handed out again
+
+
+def test_active_video_id(tmp_path: Path) -> None:
+    conn = connect(tmp_path / "t.sqlite")
+    migrate(conn)
+    conn.execute("INSERT INTO videos (video_id, title, raw) VALUES ('v1', 't', '{}')")
+    conn.execute("INSERT INTO episodes (id, video_id, title) VALUES (1, 'v1', 'A')")
+    conn.execute("INSERT INTO episodes (id, video_id, title) VALUES (2, NULL, 'B')")
+    conn.execute(
+        "INSERT INTO episodes (id, video_id, title, retired, retired_video_id) "
+        "VALUES (3, NULL, 'C', 1, 'v1')"
+    )
+    conn.execute("INSERT INTO episodes (id, video_id, title, retired) VALUES (4, NULL, 'D', 1)")
+    assert dp.db.active_video_id(conn, 1) == "v1"
+    assert [dp.db.active_video_id(conn, i) for i in (2, 3, 4, 99)] == [None] * 4

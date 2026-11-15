@@ -265,6 +265,19 @@ Pilot provlači 40 epizoda kroz ceo lanac i daje brojeve na osnovu kojih se odlu
 
 **Odluke posle pilota:** Qwen ili Claude za obogaćivanje; da li MacBook preuzima deo transkripcije; da li YouTube titlovi ičemu služe.
 
+## Faza 1b: pretraga sadržaja u Claude Desktop-u
+
+Odluka vlasnika 15. 11. 2026: osnovna pretraga po sadržaju ide pre pune obrade, da bi se način korišćenja isprobao na pilot epizodama. Ovo je deo faze 3, premešten unapred; ostatak faze 3 ostaje gde jeste.
+
+1. MCP alat `search_episodes` traži po sadržaju (transkript i opis, isti indeks kao `dp eval`) i vraća epizodu, minut, isečak i YouTube link na tačan minut. Pretraga naslova ostaje kao poseban alat.
+2. MCP alati `get_episode` (sa opisom epizode) i `get_transcript_excerpt` (deo transkripta između dva vremena, sa govornicima).
+3. Isto preko HTTP API-ja: `POST /search` i `GET /episodes/{id}/transcript`.
+4. Servis `api` koristi `embed` za upite.
+
+Pretraga vidi samo indeksirane epizode (posle faze 1: 40 pilot epizoda). Kako faza 2 obrađuje epizode, one ulaze u pretragu bez dodatnog posla.
+
+**Gotovo kada:** vlasnik u Claude Desktop-u opiše epizodu iz pilota i dobije je sa linkom na tačan minut.
+
 ## Faza 2: puna obrada
 
 Svih oko 2.500 epizoda prolazi isti lanac kao u pilotu, kao pozadinski posao na mini PC-u koji se sam nastavlja posle prekida.
@@ -281,6 +294,8 @@ Svih oko 2.500 epizoda prolazi isti lanac kao u pilotu, kao pozadinski posao na 
 **Gotovo kada:** najmanje 98% epizoda ima transkript, govornike, opis i indeks. Ostatak je na listi sa razlogom.
 
 ## Faza 3: servis za pretragu i povezivanje
+
+Osnovna pretraga sadržaja (tačke 1, 2 i 4 ispod, i alati `search_episodes`, `get_episode`, `get_transcript_excerpt`) urađena je unapred u fazi 1b. U fazi 3 ostaju filteri po strukturi, epizode po liku, prag „nije pronađeno“ i web stranica.
 
 Pretraga je jedan HTTP servis na mini PC-u. Chat bot ga koristi kao alat, a model u chatu čita kandidate i presuđuje.
 

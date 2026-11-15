@@ -9,9 +9,10 @@ from typing import Annotated, Any
 from fastapi import Depends, FastAPI, HTTPException, Path, Query, Request, Response
 from fastapi.responses import JSONResponse
 from mcp.server.transport_security import TransportSecuritySettings
+from pydantic import BaseModel, Field
 
 from dp.config import get_settings
-from dp.search import catalog
+from dp.search import catalog, content
 from dp.search.deps import DatabaseNotReady, db_conn
 from dp.search.mcp_server import mcp
 
@@ -89,7 +90,35 @@ def get_episode(
     ep = catalog.get_episode(conn, episode_id)
     if ep is None:
         raise HTTPException(404, "episode not found")
+    ep["description"] = content.description(conn, episode_id)
     return ep
+
+
+@app.get("/episodes/{episode_id}/transcript")
+def transcript(
+    episode_id: Annotated[int, Path(ge=1, le=catalog.EPISODE_ID_MAX)],
+    conn: Conn,
+    start_s: Annotated[int, Query(ge=0)] = 0,
+    end_s: Annotated[int | None, Query(ge=0)] = None,
+) -> dict[str, Any]:
+    res = content.transcript_excerpt(conn, episode_id, start_s, end_s)
+    if res is None:
+        raise HTTPException(404, "episode not found or has no transcript")
+    return res
+
+
+class SearchRequest(BaseModel):
+    query: str = Field(min_length=1, max_length=500)
+    limit: int = Field(default=10, ge=1, le=20)
+
+
+@app.post("/search")
+def search(req: SearchRequest, conn: Conn) -> dict[str, Any]:
+    """Episodes by content (transcripts and descriptions), best first."""
+    return {
+        "indexed_episodes": content.indexed_count(conn),
+        "results": content.search_content(conn, req.query, req.limit),
+    }
 
 
 @app.get("/characters")
