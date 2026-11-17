@@ -3,7 +3,7 @@
 set -euo pipefail
 source "$(dirname "$0")/common.sh"
 
-# Arguments are %q-quoted so the remote shell passes them through literally.
+# Arguments are quoted so the remote shell passes them through literally.
 args=""
-if (($#)); then args="$(printf '%q ' "$@")"; fi
+if (($#)); then args="$(shell_quote "$@")"; fi
 remote "docker compose --profile worker run --rm -T worker python -m dp.cli $args"

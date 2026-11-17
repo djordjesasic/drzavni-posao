@@ -18,10 +18,10 @@ check_remote_target "$DEST"
 ssh "$REMOTE_HOST" "mkdir -p ~/$DEST"
 rsync -az --delete "${RSYNC_EXCLUDES[@]}" "$REPO_DIR/" "$REMOTE_HOST:$DEST/"
 
-# Pytest args are %q-quoted for the remote shell and reach `sh -c` as positional
+# Pytest args are quoted for the remote shell and reach `sh -c` as positional
 # parameters ("$@"), so they are never re-parsed inside the container.
 args=""
-if (($#)); then args="$(printf '%q ' "$@")"; fi
+if (($#)); then args="$(shell_quote "$@")"; fi
 # shellcheck disable=SC2029
 ssh "$REMOTE_HOST" "cd ~/$DEST && docker build -q -f docker/Dockerfile -t drzavni-posao-test:$NAME . >/dev/null \
   && docker run --rm -e RUFF_CACHE_DIR=/tmp/ruff -e DP_CONFIG=/app/config.toml drzavni-posao-test:$NAME \

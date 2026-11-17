@@ -52,6 +52,16 @@ REMOTE
   fi
 }
 
+# Quote arguments for the remote shell: each in single quotes. Not printf %q: the Mac's
+# bash 3.2 breaks multibyte characters with it ("ovčija" arrived as "ov\xc4?ija").
+shell_quote() {
+  local a out="" sq="'" esc="'\\''"  # ' -> '\'' (close, escaped quote, reopen)
+  for a in "$@"; do
+    out+="'${a//$sq/$esc}' "
+  done
+  printf '%s' "$out"
+}
+
 remote() {
   # shellcheck disable=SC2029
   ssh "$REMOTE_HOST" "cd '$REMOTE_DIR' && $*"
