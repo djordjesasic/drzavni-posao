@@ -1,4 +1,4 @@
-# Clean speech of the three main actors, chosen by the owner (2026-11-13).
+# Clean speech of the three main actors (and guests below), chosen by the owner (2026-11-13).
 # Key: character id of the main role the actor plays (see characters.yaml).
 # Each line: "<episode> <m:ss>-<m:ss>", only that actor speaking.
 cvarkov:
@@ -19,3 +19,26 @@ boskic:
   - 1802 0:15-1:15
   - 25 6:50-7:41
   - 2003 3:11-4:14
+
+# Guests with their own actor (owner's clips from role_checks.yaml, 2026-11-17; only
+# clips without other voices). Without these profiles their lines were labelled torbica.
+grof_sekeresi:  # both the vampire and Dane the krajišnik
+  - 765 3:19-3:31
+  - 765 4:16-4:21
+  - 766 0:18-0:26
+  - 766 1:10-1:15
+  - 766 1:20-1:40
+  - 766 2:38-2:45
+  - 766 4:01-4:15
+  - 766 4:46-4:50
+  - 768 4:19-4:34
+  - 768 4:55-5:19
+  - 768 5:30-6:52
+
+zivica_kizdobranski:
+  - 1019 0:52-0:55
+  - 1019 1:29-1:31
+  - 1019 1:35-1:51
+  - 1019 3:39-3:48
+  - 1019 4:40-4:49
+  - 1019 5:45-5:52

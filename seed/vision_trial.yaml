@@ -1,0 +1,17 @@
+# Proba sa kadrovima: epizode gde je poenta (i) u slici, ne samo u govoru.
+# Svaki unos: epizoda i šta se vidi a ne čuje (to treba da opis uhvati).
+epizode:
+  - epizoda: 254
+    vidi_se: Torbica glumi da je drogiran da bi sam pojeo ovčiju glavu
+  - epizoda: 776
+    vidi_se: Čvarkov obučen kao glavni hirurg, Boškić i Dragan mu asistiraju dok vadi mozak iz ovčije glave za pohovani mozak a la Čvarkov
+  # Izabrao Claude iz pilot.yaml (2026-11-16):
+  - epizoda: 768
+    vidi_se: Rumunija, grof Sekereši kao vampir i posle ujeda kao dođoš (kostim, okruženje)
+  - epizoda: 585
+    vidi_se: Stevica sa ušećerenim jabukama; Boškić ulazi i misli da je Stevica Đorđe (isti glumac)
+  - epizoda: 730
+    vidi_se: prvo pojavljivanje Jagode (da li je opis prepozna kao novi lik)
+  # Vlasnik dodaje još 5:
+  - epizoda: 777
+    vidi_se: Čvarkov u odelu sedi, ispred njega na stolu gomila brašna, scena kao iz Scarface-a (Toni Montana pred gomilom narkotika)

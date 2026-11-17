@@ -1,0 +1,111 @@
+# Provera likova koje glas sam ne razlikuje (vlasnik popunjava).
+# Služi da proverimo da li opis (Sonnet) i oznake govornika prepoznaju pravi lik.
+#
+# Svaki red: "<epizoda> <m:ss>-<m:ss>"; posle "#" slobodna napomena
+# (npr. šta govori, ko je još u sceni). Dovoljno 1–2 reda po slučaju, više je bolje.
+# Ako lik nije čist glas tog trenutka (prekidaju ga drugi), samo napiši u napomeni.
+#
+# Primer:
+#   - 612 9:30-9:50  # imitira ga dok priča Torbici o komšiji
+
+# Čvarkov imitira dođoša (glumac: Čvarkov, lik koji se čuje: dođoš)
+cvarkov_imitira_dodjosa:
+  - 124 2:54-3:00
+  - 334 3:07-3:15
+  - 334 3:20-3:31
+  - 334 3:44-3:49
+  - 334 4:15-5:39 # prica sa draganom - cuje se glas dragana torbice
+  - 2194 9:55-10:30
+
+# Čvarkov imitira Žiku
+cvarkov_imitira_ziku:
+  - 778 5:05-5:13
+
+# Grof Sekereši kao vampir (pre preobražaja)
+sekeresi_vampir:
+  - 765 3:19-3:31
+  - 765 4:08-4:09 # kaze draganu da se ne izuva
+  - 765 4:16-4:21
+  - 765 5:59-6:02
+  - 765 6:05-6:07
+  - 766 0:18-0:26
+  - 766 1:10-1:15
+  - 766 1:20-1:40
+  - 766 2:17-2:20 # piskavim glasom, uplasio se belog luka koji je dragan izvadio
+  - 766 2:38-2:45
+  - 766 4:01-4:15 # tera vampirice od dragana
+  - 766 4:46-4:50
+  - 766 4:59-6:32 # objasnjava situaciju sa draganom i silovickom vampiricama - cuju se vampirice takodje kako šište po nekad do on prica
+
+# Dane, Sekereši posle preobražaja (krajišnik)
+sekeresi_dane_krajisnik:
+  - 768 4:19-4:34
+  - 768 4:55-5:19
+  - 768 5:30-6:52
+
+# Milun, Boškićev rođak (igra ga glumac Boškića)
+# Potvrdi ime i šta je Boškiću:
+# Boškićev brat od strica u ovoj epizodi bar nemam potvrdu o imenu
+boskicev_brat_od_strica:
+  - 1772 0:14-0:28
+  - 1772 0:32-0:52
+  - 1772 1:10-1:33
+  - 1772 1:38-1:57
+
+# Živica Kiždobranski (poseban glumac)
+# Ovi redovi mogu da posluže i za profil glasa, ako je samo on u isečku.
+zivica_kizdobranski:
+  - 1019 0:52-0:55
+  - 1019 1:29-1:31
+  - 1019 1:35-1:51
+  - 1019 2:16-2:29 # cuje se boskicev glas
+  - 1019 3:39-3:48
+  - 1019 4:40-4:49
+  - 1019 5:21-5:30 # cuje se cvarkov
+  - 1019 5:45-5:52
+  - 1019 6:36-7:34 # cuje se cvarkov
+  - 2046 0:40-0:45
+  - 2046 1:26-1:27
+  - 2046 3:03-3:18 # cuju se boskic i torbica
+  - 2046 3:39-3:46
+  - 2046 4:22-4:30
+  - 2046 5:21-5:47
+  - 2046 5:54-6:12 # cuje se boskic "sve su iste"
+  - 2046 6:17-6:24 # cuje se trobica
+  - 2046 6:32-7:00
+  - 2046 7:12-7:28
+  - 2046 8:21-8:32
+
+boskic_stariji: # boskicev otac
+  - 426 3:25-3:26 # kaze dobro jutro cvarkovu i torbici
+  - 426 3:30-3:31
+  - 426 3:37-3:38 # ko je vas predsednik - pokazuje na titovu sliku i negoduje zasto nije skinuta
+  - 426 3:42-3:45 
+  - 426 3:48-3:53
+  - 426 3:58-4:05
+  - 426 4:09-4:26 # povremeno se cuju cvarkov i torbica
+  - 426 4:30-4:45 # cuje se cvarkov kratko
+  - 426 4:49-5:05
+  - 880 4:21-4:28
+  - 880 5:08-5:30 # cuje se Jagodin smeh
+  - 880 5:57-6:06 
+  - 880 6:54-7:18
+  - 881 4:07-4:39
+  - 882 2:58-3:44
+  - 882 6:12-6:45 # prica sa Jagodom - cuje se i Jagodin glas
+  - 882 7:29-7:50
+  - 883 1:01-1:55
+  - 883 4:58-5:04
+  - 883 5:32-5:58
+  - 883 6:18-6:50
+  - 883 6:59-7:05
+  - 883 7:18-8:00
+  - 883 8:05-8:37 
+  - 1764 6:08-6:12 # izbacuje cvarkova i torbicu napolje bi pricao sa sinom
+  - 1764 6:24-6:36
+  - 1764 6:45-6:52
+  - 1764 7:26-7:55
+  - 1764 7:58-8:20 # u epizodi 1764 prica sa boskicem od 6:24 do 8:20 mozda treba uporediti glasove
+  - 2342 2:17-2:38
+  - 2342 2:47-3:48 # ubacuje se cvarkov par puta kratko
+  - 2342 3:58-4:26

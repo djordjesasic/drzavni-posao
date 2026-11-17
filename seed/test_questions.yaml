@@ -123,3 +123,25 @@ pitanja:
     epizoda: 988
     tip: ""
     napomena: ""
+  # Dodato 2026-11-16 posle probe u Claude Desktop-u.
+  - pitanje: "cvarkov oduzima boskicu telefon, mama da dodje po njega"
+    epizoda: 612
+    minut: "9:42"
+    tip: citat
+    napomena: ""
+
+  - pitanje: "cvarkov kao hirurg, pohovani mozak"
+    epizoda: 776
+    minut: "6:32"
+    tip: radnja
+    napomena: "van pilota, obrađena ručno"
+
+  - pitanje: "cvarkov sedi iza gomile brasna kao u scarface"
+    epizoda: 777
+    tip: radnja
+    napomena: "van pilota, obrađena ručno; vidi se samo u slici"
+
+  - pitanje: "ovcija glava"
+    epizoda: 254
+    tip: drugo
+    napomena: "kratak upit; vidi se samo u slici"
