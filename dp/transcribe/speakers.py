@@ -214,12 +214,16 @@ def do_speakers(s: Settings, conn: sqlite3.Connection, eid: int, embed: Embedder
     segs = conn.execute(
         "SELECT idx, start_ms, end_ms FROM segments WHERE episode_id=? ORDER BY idx", (eid,)
     ).fetchall()
-    long = [r for r in segs if (r["end_ms"] - r["start_ms"]) / 1000 >= MIN_SEGMENT_S]
-    pieces = []
-    for r in long:
+    long, pieces = [], []
+    for r in segs:
         start = r["start_ms"] / 1000
         end = min(r["end_ms"] / 1000, start + MAX_SEGMENT_S)
-        pieces.append(x[int(start * SR) : int(end * SR)])
+        piece = x[int(start * SR) : int(end * SR)]
+        # By the audio actually there, not the segment's times: Whisper can put a segment
+        # past the end of the audio, and a few samples crash the voice model.
+        if len(piece) >= MIN_SEGMENT_S * SR:
+            long.append(r)
+            pieces.append(piece)
     labels = score(embed(pieces), profiles) if pieces else []
     with conn:
         conn.execute("UPDATE segments SET actor=NULL, actor_score=NULL WHERE episode_id=?", (eid,))

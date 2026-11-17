@@ -91,9 +91,11 @@ def test_profiles_and_speakers_step(tmp_path: Path) -> None:
     conn.executemany(
         "INSERT INTO segments (episode_id, idx, start_ms, end_ms, text, text_latin, text_fold) "
         "VALUES (2, ?, ?, ?, 'x', 'x', 'x')",
-        [(0, 0, 4000), (1, 4000, 6000), (2, 6000, 7000)],
+        # The last one starts past the end of the 10 s audio (Whisper does that): with
+        # almost no samples it must be skipped, not crash the voice model.
+        [(0, 0, 4000), (1, 4000, 6000), (2, 6000, 7000), (3, 9_999, 12_000)],
     )
     res = speakers.do_speakers(s, conn, 2, fake_embed)  # type: ignore[arg-type]
     assert res["labelled"] == 2
     rows = conn.execute("SELECT actor FROM segments WHERE episode_id=2 ORDER BY idx")
-    assert [r[0] for r in rows] == ["torbica", speakers.OTHER, None]
+    assert [r[0] for r in rows] == ["torbica", speakers.OTHER, None, None]

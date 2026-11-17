@@ -97,6 +97,8 @@ class Health:
         try:
             while not self._stop.wait(HEALTH_EVERY_S):
                 temps = self.check()
+                if not self.hot and self.state == "hot":
+                    self.state = "cooled"  # the run loop goes on at its next check
                 with conn:
                     conn.execute(
                         "INSERT INTO worker_health (cpu_c, gpu_c, nvme_c, state, episode_id) "
