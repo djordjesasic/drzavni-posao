@@ -9,7 +9,7 @@ from typing import Any
 from dp import pipeline
 from dp.config import Settings
 from dp.db import active_video_id
-from dp.enrich import claude, client, prompt
+from dp.enrich import claude, client, frames, prompt
 from dp.enrich.store import valid_enrichment
 from dp.schedule import wait_if_paused
 
@@ -96,7 +96,16 @@ def enrich_episode(
         if cfg.get("local"):
             wait_if_paused(s.pause_start, s.pause_end)
         t0 = time.monotonic()
-        if cfg.get("api") == "anthropic":
+        if cfg.get("api") == "anthropic" and cfg.get("frames_every_s"):
+            path = frames.video_path(s.data_dir, episode_id)
+            if not path.exists():
+                raise FileNotFoundError(f"no video for episode {episode_id}: {path}")
+            shots = frames.extract(path, float(cfg["frames_every_s"]))
+            system, stable, episode = parts
+            reply = claude.chat(
+                cfg, system + prompt.FRAMES_SYSTEM, stable, episode, frames.to_blocks(shots)
+            )
+        elif cfg.get("api") == "anthropic":
             reply = claude.chat(cfg, *parts)
         else:
             reply = client.chat(cfg, prompt.to_messages(parts), schema=prompt.JSON_SCHEMA)
@@ -133,7 +142,7 @@ def enrich_episode(
                     video_id,
                 ),
             )
-            if not error and model == s.index_enrich_model:
+            if not error and model in s.index_enrich_models:
                 # The description feeds the index; without this the step stays 'done' and
                 # the new text never reaches it.
                 pipeline.invalidate(conn, episode_id, ["index"])

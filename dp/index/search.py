@@ -26,9 +26,19 @@ _STOP = {
 }  # fmt: skip
 
 
+def _stem(word: str) -> str:
+    """Crude stem for Serbian case endings, as an FTS5 prefix: "glava" -> "glav"*, so
+    glavu/glave/glavom match too. Short words stay exact (too many false prefixes)."""
+    if len(word) >= 7:
+        return f'"{word[:-2]}"*'
+    if len(word) >= 5:
+        return f'"{word[:-1]}"*'
+    return f'"{word}"'
+
+
 def fts_query(text: str) -> str:
     words = [w for w in _WORD.findall(fold(text)) if w not in _STOP]
-    return " OR ".join(f'"{w}"' for w in dict.fromkeys(words))
+    return " OR ".join(_stem(w) for w in dict.fromkeys(words))
 
 
 def _fts(conn: sqlite3.Connection, query: str) -> list[int]:

@@ -30,6 +30,18 @@ def valid_enrichment(
     ).fetchone()
 
 
+def index_description(
+    conn: sqlite3.Connection, episode_id: int, models: tuple[str, ...], video_id: str | None
+) -> sqlite3.Row | None:
+    """The description the index uses: the first model in `models` (config [index]
+    enrich_model, best first) with a valid result, stale ones included."""
+    for model in models:
+        row = valid_enrichment(conn, episode_id, model, video_id, include_stale=True)
+        if row is not None:
+            return row
+    return None
+
+
 def mark_stale(conn: sqlite3.Connection, episode_id: int) -> int:
     """The transcript of the episode changed: its descriptions must be made again. No
     commit; the caller owns the transaction. Returns the number of rows marked."""

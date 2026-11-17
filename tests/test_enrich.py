@@ -1,3 +1,4 @@
+import dataclasses
 import json
 import sqlite3
 import subprocess
@@ -12,6 +13,7 @@ from dp.config import Settings
 from dp.db import connect, migrate
 from dp.enrich import client, prompt
 from dp.enrich import run as enrich_run
+from dp.enrich.store import index_description
 
 SEED = Path(__file__).parent.parent / "seed" / "characters.yaml"
 
@@ -369,13 +371,42 @@ def test_successful_enrichment_marks_index_step_pending(
     index = "SELECT status FROM episode_steps WHERE step='index'"
     enrich_run.enrich_episode(s, conn, 254, "other")  # not the model that feeds the index
     assert conn.execute(index).fetchone()[0] == "done"
-    s.enrich_models[s.index_enrich_model] = {"base_url": "http://x/v1", "model": "m"}
-    enrich_run.enrich_episode(s, conn, 254, s.index_enrich_model)
+    s = dataclasses.replace(s, index_enrich_models=("vision", "plain"))
+    s.enrich_models["plain"] = {"base_url": "http://x/v1", "model": "m"}
+    enrich_run.enrich_episode(s, conn, 254, "plain")  # the fallback also feeds the index
     assert conn.execute(index).fetchone()[0] == "pending"
     # No step row: nothing is created.
     conn.execute("DELETE FROM episode_steps WHERE step='index'")
-    enrich_run.enrich_episode(s, conn, 254, s.index_enrich_model, force=True)
+    enrich_run.enrich_episode(s, conn, 254, "plain", force=True)
     assert conn.execute(index).fetchone() is None
+
+
+def test_index_uses_the_first_model_with_a_description(
+    tmp_path: Path,
+    conn: sqlite3.Connection,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    answers = iter(["iz transkripta", "sa kadrovima"])
+    monkeypatch.setattr(
+        client,
+        "chat",
+        lambda cfg, m, **kw: client.Reply(
+            json.dumps(_good_answer() | {"summary": next(answers)}), 1, 1
+        ),
+    )
+    s = _settings(tmp_path)
+    for name in ("vision", "plain"):
+        s.enrich_models[name] = {"base_url": "http://x/v1", "model": "m"}
+    models = ("vision", "plain")
+    assert index_description(conn, 254, models, "v1") is None
+    enrich_run.enrich_episode(s, conn, 254, "plain")
+    assert json.loads(index_description(conn, 254, models, "v1")["data"])["summary"] == (
+        "iz transkripta"
+    )
+    enrich_run.enrich_episode(s, conn, 254, "vision")
+    assert json.loads(index_description(conn, 254, models, "v1")["data"])["summary"] == (
+        "sa kadrovima"
+    )
 
 
 def test_enrich_needs_transcript_of_the_current_video(

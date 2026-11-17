@@ -12,6 +12,9 @@ seed_pilot = "/app/seed/pilot.yaml"
 # Pause between YouTube downloads (seconds, random in this range).
 pause_min_s = 20
 pause_max_s = 30
+# Keep the video (data/video/<id>.mkv) up to this height, for frames; 0 = audio only.
+# 480p is ~180 GB for the whole series (owner's decision 2026-11-16).
+video_height = 480
 
 [transcribe]
 language = "sr"
@@ -31,8 +34,9 @@ llama_url = "http://172.17.0.1:8080"
 embed_url = "http://embed"
 
 [index]
-# Description used for the index: config name of the enrichment model.
-enrich_model = "sonnet"
+# Description used for the index: config names of enrichment models, best first; an
+# episode uses the first one it has a result for.
+enrich_model = ["sonnet_vision", "sonnet"]
 # Transcript windows: this long, a new one every hop_s seconds (overlap).
 window_s = 75
 hop_s = 40
@@ -69,6 +73,15 @@ api = "anthropic"
 model = "claude-sonnet-5-5"
 effort = "low"
 max_tokens = 16000
+
+[enrich.models.sonnet_vision]
+# Sonnet also sees one frame every frames_every_s seconds of the video (trial 2026-11-16:
+# at 20 s it missed short visual gags, 10 s caught them).
+api = "anthropic"
+model = "claude-sonnet-5-5"
+effort = "low"
+max_tokens = 16000
+frames_every_s = 10
 
 [api]
 # Hostnames (without port) accepted in the Host header on /mcp (DNS rebinding

@@ -119,8 +119,11 @@ Oznaka govornika u transkriptu (npr. "<cvarkov>") je prepoznata po GLASU i govor
 priča, ne koji lik: glumac Čvarkova glumi i Stevicu, glumac Boškića i Boškića starijeg, a sva \
 trojica imitiraju druge ljude. Ako glas kaže "cvarkov", a replika zvuči kao neko drugi (drugi \
 dijalekt, drugi lik, telefon), to je verovatno imitacija ili druga uloga istog glumca. \
-"<cvarkov?>" znači da glas nije siguran, "<drugi>" da to nije nijedan od trojice (muzika, \
-reklama, gost), a red bez oznake je prekratak za prepoznavanje.
+"<cvarkov?>" znači da glas nije siguran, "<drugi>" da to nije nijedan poznat glas (muzika, \
+reklama, gost), a red bez oznake je prekratak za prepoznavanje. Sistem poznaje glasove glavne \
+trojice i nekoliko gostiju sa sopstvenim glumcem (npr. "<grof_sekeresi>"); ostali gosti sa \
+sličnim govorom (npr. krajiškim) često dobiju oznaku jednog od poznatih. Kad se oznaka i \
+kontekst ne slažu (neko ga zove imenom, lik priča o sebi), presuđuje kontekst.
 
 Pravila:
 - Odgovori isključivo jednim JSON objektom tačno po zadatoj šemi, bez ikakvog drugog teksta.
@@ -133,6 +136,20 @@ public_figures, ne u characters ni unknown_names. Ne izmišljaj likove ni veze m
 - Vremena (start) uzmi iz oznaka [m:ss] u transkriptu.
 - Replike prepiši iz transkripta, ispravi samo očigledne greške prepoznavanja.
 - Prazne liste ostavi prazne; ne popunjavaj ih na silu."""
+
+
+FRAMES_SYSTEM = """
+
+Posle transkripta dobijaš i kadrove iz videa, svaki sa vremenom [m:ss]. Iskoristi ih za ono \
+što se vidi, a ne čuje: rekviziti i hrana, kostimi i prerušavanja, mesto radnje (kancelarija \
+ili napolju), ko je u kadru, gegovi bez reči, i kad neko glumi ili se pretvara. To upiši u \
+summary i opening_scene, važne predmete u objects. Lik prepoznaj po izgledu samo ako je jasno \
+iz konteksta (ime, transkript); inače ga opiši rečima („čovek u vampirskom ogrtaču“) i navedi \
+u uncertain. Kadar ne opisuj sam za sebe: povezuj ga sa onim što se govori.
+Poenta je često pred kraj epizode: ako poslednji kadrovi otkrivaju zašto se neko onako \
+ponašao (glumio, pretvarao se, imao skriveni razlog), napiši to izričito u summary. Hranu i \
+predmete imenuj što konkretnije (npr. „pečeni pileći batak“, ne samo „hrana“) i reci ko ih \
+drži."""
 
 
 def _registry(conn: sqlite3.Connection) -> str:

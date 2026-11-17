@@ -1,4 +1,5 @@
-"""Download step: audio only (Opus, mono), full metadata and YouTube's Serbian captions."""
+"""Download step: audio (Opus, mono), optionally the video (kept for frames), full
+metadata and YouTube's Serbian captions."""
 
 import json
 import logging
@@ -26,13 +27,26 @@ def _ydl_opts(tmp: Path, **extra: Any) -> dict[str, Any]:
     }
 
 
-def download(video_id: str, episode_id: int, data_dir: Path) -> dict[str, Any]:
+def video_format(height: int) -> str:
+    """yt-dlp format: best audio only (height 0), or video up to `height` plus audio."""
+    if height <= 0:
+        return "bestaudio/best"
+    return f"bv*[height<={height}]+ba/b[height<={height}]/bv*+ba/b"
+
+
+def download(
+    video_id: str, episode_id: int, data_dir: Path, video_height: int = 0
+) -> dict[str, Any]:
+    """Audio (and, with video_height > 0, the video kept in data/video/<id>.mkv)."""
     url = f"https://www.youtube.com/watch?v={video_id}"
     tmp = data_dir / "work" / str(episode_id) / "download"
     shutil.rmtree(tmp, ignore_errors=True)
     tmp.mkdir(parents=True)
 
-    with yt_dlp.YoutubeDL(_ydl_opts(tmp, format="bestaudio/best", writeinfojson=True)) as ydl:
+    opts = _ydl_opts(tmp, format=video_format(video_height), writeinfojson=True)
+    if video_height > 0:
+        opts["merge_output_format"] = "mkv"
+    with yt_dlp.YoutubeDL(opts) as ydl:
         ydl.download([url])
     src = next(p for p in tmp.iterdir() if p.name.startswith("src.") and p.suffix != ".json")
 
@@ -46,6 +60,14 @@ def download(video_id: str, episode_id: int, data_dir: Path) -> dict[str, Any]:
         check=True,
     )  # fmt: skip
     part.replace(out)
+
+    video: dict[str, Any] = {}
+    if video_height > 0:
+        video_dir = data_dir / "video"
+        video_dir.mkdir(exist_ok=True)
+        vout = video_dir / f"{episode_id}.mkv"
+        src.replace(vout)
+        video = {"video_bytes": vout.stat().st_size, "video_height": _height(vout)}
 
     meta_dir = data_dir / "meta"
     meta_dir.mkdir(exist_ok=True)
@@ -64,7 +86,39 @@ def download(video_id: str, episode_id: int, data_dir: Path) -> dict[str, Any]:
         ),
         "subtitle_langs": sorted(info.get("subtitles") or {}),
         "subs_saved": subs,
+        **video,
     }
+
+
+def fetch_video(video_id: str, episode_id: int, data_dir: Path, height: int) -> dict[str, Any]:
+    """Only the video, into data/video/<id>.mkv, for an episode whose audio is already
+    processed: no pipeline step changes."""
+    tmp = data_dir / "work" / str(episode_id) / "video"
+    shutil.rmtree(tmp, ignore_errors=True)
+    tmp.mkdir(parents=True)
+    opts = _ydl_opts(tmp, format=video_format(height), merge_output_format="mkv")
+    with yt_dlp.YoutubeDL(opts) as ydl:
+        ydl.download([f"https://www.youtube.com/watch?v={video_id}"])
+    src = next(p for p in tmp.iterdir() if p.name.startswith("src."))
+    video_dir = data_dir / "video"
+    video_dir.mkdir(exist_ok=True)
+    out = video_dir / f"{episode_id}.mkv"
+    src.replace(out)
+    shutil.rmtree(tmp, ignore_errors=True)
+    return {"video_bytes": out.stat().st_size, "video_height": _height(out)}
+
+
+def _height(path: Path) -> int | None:
+    """Height of the first video stream, or None when it has none or ffprobe fails."""
+    res = subprocess.run(
+        ["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=height",
+         "-of", "csv=p=0", str(path)],
+        capture_output=True, text=True,
+    )  # fmt: skip
+    try:
+        return int(res.stdout.strip().splitlines()[0])
+    except (IndexError, ValueError):
+        return None
 
 
 def _download_subs(url: str, tmp: Path, subs_dir: Path, episode_id: int) -> list[str]:

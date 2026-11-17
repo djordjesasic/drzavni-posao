@@ -69,14 +69,14 @@ def test_index_is_replaced_on_rerun_and_search_finds_episodes(tmp_path: Path) ->
         build.do_index(s, conn, eid, fake_embed)
     info = build.do_index(s, conn, 254, fake_embed)  # rerun replaces, no duplicates
     assert info == {
-        "windows": {"transcript": 2, "summary": 1, "story": 1},
+        "windows": {"transcript": 2, "summary": 1, "moment": 1, "story": 1},
         "description": True,
         "embedded": 0,
-        "kept": 4,
+        "kept": 5,
     }
     n_win = conn.execute("SELECT COUNT(*) FROM windows").fetchone()[0]
     n_fts = conn.execute("SELECT COUNT(*) FROM windows_fts").fetchone()[0]
-    assert n_win == n_fts == 4 + 2 + 2
+    assert n_win == n_fts == 5 + 2 + 2
 
     hits = search.search(conn, "dragan se pravi drogiran zbog ovcije glave", fake_embed)
     assert hits[0]["episode_id"] == 254
@@ -84,6 +84,23 @@ def test_index_is_replaced_on_rerun_and_search_finds_episodes(tmp_path: Path) ->
     assert hits[0]["episode_id"] == 612 and hits[0]["kind"] == "transcript"
     hits = search.search(conn, "ulaze kroz prozor zbog dregera", fake_embed)
     assert hits[0]["episode_id"] == 487
+
+
+def test_summary_sentences_are_their_own_windows() -> None:
+    d = {"summary": "Torbica rešava predmete i baca fascikle. Kraj je nejasan. Na kraju drži "
+                    "pečenu ovčiju glavu i ljubi je!"}  # fmt: skip
+    moments = [w["text"] for w in build.description_windows("T", d) if w["kind"] == "moment"]
+    assert moments == [
+        "Torbica rešava predmete i baca fascikle.",
+        "Na kraju drži pečenu ovčiju glavu i ljubi je!",
+    ]
+
+
+def test_word_search_matches_other_case_endings(tmp_path: Path) -> None:
+    s, conn = _db(tmp_path)
+    build.do_index(s, conn, 254, fake_embed)  # description: "... pojeo ovčiju glavu."
+    hits = search.search(conn, "ovčija glava", lambda t: (_ for _ in ()).throw(OSError()))
+    assert hits and hits[0]["episode_id"] == 254
 
 
 def test_description_tolerates_nulls_in_lists() -> None:
@@ -171,14 +188,14 @@ def test_reindex_embeds_only_new_windows(tmp_path: Path) -> None:
         return fake_embed(texts)
 
     first = build.do_index(s, conn, 254, counting)
-    assert (first["embedded"], first["kept"]) == (4, 0) and calls == [4]
+    assert (first["embedded"], first["kept"]) == (5, 0) and calls == [5]
     ids = {r[0] for r in conn.execute("SELECT id FROM windows WHERE kind='transcript'")}
-    assert build.do_index(s, conn, 254, counting)["embedded"] == 0 and calls == [4]
+    assert build.do_index(s, conn, 254, counting)["embedded"] == 0 and calls == [5]
     # New description: transcript windows are kept, the summary and story are replaced.
-    data = {"summary": "Nesto drugo, laptop.", "stories": []}
+    data = {"summary": "Nesto drugo, laptop.", "stories": []}  # too short for a moment
     conn.execute("UPDATE enrichment SET data=?", (json.dumps(data),))
     info = build.do_index(s, conn, 254, counting)
-    assert (info["embedded"], info["kept"]) == (1, 2) and calls == [4, 1]
+    assert (info["embedded"], info["kept"]) == (1, 2) and calls == [5, 1]
     assert ids == {r[0] for r in conn.execute("SELECT id FROM windows WHERE kind='transcript'")}
     n_win = conn.execute("SELECT COUNT(*) FROM windows WHERE episode_id=254").fetchone()[0]
     n_fts = conn.execute(
@@ -201,10 +218,10 @@ def test_rebuild_embeds_everything_again(tmp_path: Path) -> None:
     build.do_index(s, conn, 254, counting)
     build.do_index(s, conn, 612, counting)
     info = build.do_index(s, conn, 254, counting, rebuild=True)
-    assert (info["embedded"], info["kept"]) == (4, 0) and calls == [4, 2, 4]
-    assert conn.execute("SELECT COUNT(*) FROM windows WHERE episode_id=254").fetchone()[0] == 4
+    assert (info["embedded"], info["kept"]) == (5, 0) and calls == [5, 2, 5]
+    assert conn.execute("SELECT COUNT(*) FROM windows WHERE episode_id=254").fetchone()[0] == 5
     # FTS rows follow; other episodes are untouched.
-    assert conn.execute("SELECT COUNT(*) FROM windows_fts").fetchone()[0] == 6
+    assert conn.execute("SELECT COUNT(*) FROM windows_fts").fetchone()[0] == 7
     assert conn.execute("SELECT COUNT(*) FROM windows WHERE episode_id=612").fetchone()[0] == 2
 
 
@@ -240,7 +257,8 @@ def test_transcript_window_uses_sure_score(tmp_path: Path) -> None:
 
 
 def test_fts_query_folds_and_drops_short_and_stop_words() -> None:
-    assert search.fts_query("Kad Čvarkov greje sendvič") == '"cvarkov" OR "greje" OR "sendvic"'
+    assert search.fts_query("Kad Čvarkov greje sendvič") == '"cvark"* OR "grej"* OR "sendv"*'
+    assert search.fts_query("ovčija glava sir") == '"ovcij"* OR "glav"* OR "sir"'
     assert search.fts_query("a i u") == ""
 
 

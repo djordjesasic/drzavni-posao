@@ -11,12 +11,13 @@ from dp import pilot, pipeline, worker
 from dp.catalog import characters, classify, export, youtube
 from dp.config import get_settings
 from dp.db import active_video_id, connect, migrate
+from dp.enrich import frames
 from dp.enrich import run as enrich_run
 from dp.eval import run as eval_run
 from dp.index import embed as embed_client
 from dp.index import search as index_search
 from dp.services import check_services
-from dp.transcribe import speakers
+from dp.transcribe import download, speakers
 from dp.transcribe import steps as transcribe_steps
 
 log = logging.getLogger("dp")
@@ -220,6 +221,34 @@ def cmd_enrich(args: argparse.Namespace) -> None:
         raise SystemExit(f"{len(failed)} episode(s) failed: {failed}")
 
 
+def cmd_fetch_video(args: argparse.Namespace) -> None:
+    """Download only the video of episodes (no step changes), with the YouTube pause."""
+    s = get_settings()
+    conn = _db()
+    if s.video_height <= 0:
+        raise SystemExit("[download] video_height is 0 in config.toml")
+    ids = _episode_ids(conn, args)[: args.limit or None]
+    failed = []
+    for n, eid in enumerate(ids):
+        vid = active_video_id(conn, eid)
+        if vid is None:
+            print(f"{eid}: not in the catalog, skipped", flush=True)
+            continue
+        if frames.video_path(s.data_dir, eid).exists() and not args.force:
+            print(f"{eid}: video already there", flush=True)
+            continue
+        if n:
+            transcribe_steps.polite_pause(s)
+        try:
+            info = download.fetch_video(vid, eid, s.data_dir, s.video_height)
+            print(f"{eid}: {json.dumps(info)}", flush=True)
+        except Exception:
+            log.exception("episode %s: video not downloaded", eid)
+            failed.append(eid)
+    if failed:
+        raise SystemExit(f"{len(failed)} episode(s) failed: {failed}")
+
+
 def cmd_voice_profiles(_: argparse.Namespace) -> None:
     s = get_settings()
     info = speakers.build_profiles(
@@ -310,6 +339,11 @@ def main() -> None:
     en.add_argument("--limit", type=int, default=0)
     en.add_argument("--force", action="store_true", help="redo episodes already described")
     en.set_defaults(func=cmd_enrich)
+    fv = sub.add_parser("fetch-video", help="download only the video (for frames)")
+    fv.add_argument("--episodes", help="comma-separated ids; default: the pilot set")
+    fv.add_argument("--limit", type=int, default=0)
+    fv.add_argument("--force", action="store_true", help="download again if present")
+    fv.set_defaults(func=cmd_fetch_video)
     sub.add_parser(
         "voice-profiles", help="build actor voice profiles from seed/voices.yaml"
     ).set_defaults(func=cmd_voice_profiles)

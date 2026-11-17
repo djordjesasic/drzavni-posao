@@ -11,9 +11,16 @@ import anthropic
 from dp.enrich.client import Reply
 
 
-def chat(cfg: dict[str, Any], system: str, stable: str, episode: str) -> Reply:
+def chat(
+    cfg: dict[str, Any],
+    system: str,
+    stable: str,
+    episode: str,
+    images: list[dict[str, Any]] | None = None,
+) -> Reply:
     """One Messages API call. cfg is a [enrich.models.<name>] table with api = "anthropic";
-    the key comes from ANTHROPIC_API_KEY (.env on the mini PC)."""
+    the key comes from ANTHROPIC_API_KEY (.env on the mini PC). `images`: extra content
+    blocks (frames) after the transcript."""
     client = anthropic.Anthropic(timeout=float(cfg.get("timeout_s", 600)))
     kwargs: dict[str, Any] = {}
     if effort := cfg.get("effort"):
@@ -28,6 +35,7 @@ def chat(cfg: dict[str, Any], system: str, stable: str, episode: str) -> Reply:
                 "content": [
                     {"type": "text", "text": stable, "cache_control": {"type": "ephemeral"}},
                     {"type": "text", "text": episode},
+                    *(images or []),
                 ],
             }
         ],

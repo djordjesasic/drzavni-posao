@@ -30,11 +30,14 @@ class Settings:
     # name -> {base_url, model, local?, api_key_env?, max_tokens?, extra?}
     enrich_models: dict[str, dict[str, Any]] = field(default_factory=dict)
     embed_url: str = "http://embed"
-    index_enrich_model: str = "sonnet"  # whose description goes into the index
+    # whose description goes into the index: the first of these with a result
+    index_enrich_models: tuple[str, ...] = ("sonnet",)
     index_window_s: float = 75.0
     index_hop_s: float = 40.0
     # [worker] temperature limits in °C (dp.worker.Limits field names)
     worker_limits: dict[str, float] = field(default_factory=dict)
+    # [download] keep the video up to this height; 0 = audio only
+    video_height: int = 0
 
     @property
     def audio_dir(self) -> Path:
@@ -78,11 +81,17 @@ def get_settings() -> Settings:
         edge_s=float(raw["transcribe"].get("edge_s", 30)),
         enrich_models=raw.get("enrich", {}).get("models", {}),
         embed_url=os.environ.get("DP_EMBED_URL") or services.get("embed_url", "http://embed"),
-        index_enrich_model=raw.get("index", {}).get("enrich_model", "sonnet"),
+        index_enrich_models=_models(raw.get("index", {}).get("enrich_model", "sonnet")),
         index_window_s=float(raw.get("index", {}).get("window_s", 75)),
         index_hop_s=float(raw.get("index", {}).get("hop_s", 40)),
         worker_limits={k: float(v) for k, v in raw.get("worker", {}).items()},
+        video_height=int(raw["download"].get("video_height", 0)),
     )
+
+
+def _models(value: str | list[str]) -> tuple[str, ...]:
+    """[index] enrich_model: one name or a list, best first."""
+    return (value,) if isinstance(value, str) else tuple(value)
 
 
 def api_port() -> int:

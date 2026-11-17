@@ -10,7 +10,7 @@ from typing import Any
 import numpy as np
 
 from dp.config import Settings
-from dp.enrich.store import valid_enrichment
+from dp.enrich.store import index_description
 from dp.index import embed as embed_client
 from dp.index.store import delete_windows
 from dp.text import fold
@@ -18,6 +18,8 @@ from dp.transcribe.speakers import SURE_SCORE
 
 Embed = Callable[[list[str]], np.ndarray]
 _MMSS = re.compile(r"^\s*(\d+):(\d{1,2})")
+_SENTENCE = re.compile(r"(?<=[.!?])\s+")
+MIN_SENTENCE = 25  # shorter sentences ("Kraj je nejasan.") say nothing on their own
 
 
 def _ms(mmss: Any) -> int | None:
@@ -106,6 +108,11 @@ def description_windows(title: str, d: dict[str, Any]) -> list[dict[str, Any]]:
         if x and not x.endswith(": ")
     )
     out = [{"kind": "summary", "start_ms": None, "end_ms": None, "text": main}]
+    # Each sentence of the summary on its own too: in the whole description one remembered
+    # detail ("ovčija glava") is diluted by everything else and loses to short pieces.
+    for sentence in _SENTENCE.split(_s(d.get("summary"))):
+        if len(sentence) >= MIN_SENTENCE:
+            out.append({"kind": "moment", "start_ms": None, "end_ms": None, "text": sentence})
     for s in _objs(d.get("stories")):
         about, summary = _j(s.get("about")), _s(s.get("summary"))
         if not (about or summary):
@@ -152,7 +159,7 @@ def do_index(
     ).fetchall()
     wins = transcript_windows(segs, names, s.index_window_s, s.index_hop_s)
     # A stale description (the transcript changed) is still used until it is made again.
-    row = valid_enrichment(conn, eid, s.index_enrich_model, ep["video_id"], include_stale=True)
+    row = index_description(conn, eid, s.index_enrich_models, ep["video_id"])
     if row:
         wins += description_windows(ep["title"], json.loads(row["data"]))
     # Keep windows whose content is unchanged (e.g. all transcript windows after a new

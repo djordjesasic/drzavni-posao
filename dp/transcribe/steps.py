@@ -68,7 +68,7 @@ def _paths(s: Settings, eid: int) -> tuple[Path, Path, Path]:
 
 
 def do_download(s: Settings, eid: int, video_id: str) -> dict[str, Any]:
-    return download.download(video_id, eid, s.data_dir)
+    return download.download(video_id, eid, s.data_dir, s.video_height)
 
 
 def do_prepare(s: Settings, eid: int) -> dict[str, Any]:

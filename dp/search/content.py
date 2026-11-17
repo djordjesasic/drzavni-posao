@@ -10,14 +10,17 @@ import numpy as np
 
 from dp.config import get_settings
 from dp.db import active_video_id
-from dp.enrich.store import valid_enrichment
+from dp.enrich.store import index_description
 from dp.index import embed as embed_client
 from dp.index.search import Vectors, search
 from dp.search.catalog import youtube_url
 from dp.transcribe.speakers import OTHER, SURE_SCORE
 
 MAX_EXCERPT_S = 300  # one excerpt covers at most 5 minutes; ask again for more
-_MATCHED = {"summary": "opis", "story": "priča", "imitation": "imitacija", "quote": "replika"}
+_MATCHED = {
+    "summary": "opis", "moment": "opis", "story": "priča", "imitation": "imitacija",
+    "quote": "replika",
+}  # fmt: skip
 
 _lock = threading.Lock()
 _cache: dict[tuple[int, int], Vectors] = {}  # at most one entry: the current index
@@ -87,9 +90,7 @@ def description(conn: sqlite3.Connection, episode_id: int) -> dict[str, Any] | N
     vid = active_video_id(conn, episode_id)
     if vid is None:
         return None
-    row = valid_enrichment(
-        conn, episode_id, get_settings().index_enrich_model, vid, include_stale=True
-    )
+    row = index_description(conn, episode_id, get_settings().index_enrich_models, vid)
     if row is None:
         return None
     d = json.loads(row["data"])
