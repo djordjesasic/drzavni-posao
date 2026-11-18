@@ -1,6 +1,10 @@
 """Classify channel videos and build the episodes table.
 
-Episode titles look like: "DRŽAVNI POSAO [HQ] - Ep.2036: Na potpis (25.09.2023.)".
+How a title becomes an episode is series-specific: PARSERS maps a name (config
+[catalog] parser) to a (classify, season_of) pair. A new series with other titles adds its
+own pair here; the rest of build_episodes is the same for every series.
+
+drzavni_posao: episode titles look like: "DRŽAVNI POSAO [HQ] - Ep.2036: Na potpis (25.09.2023.)".
 Season comes from the "DRŽAVNI POSAO <n>[ - part 2]" playlist; episodes missing from
 season playlists inherit the season of their neighbouring episode numbers.
 """
@@ -9,6 +13,7 @@ import datetime
 import json
 import re
 import sqlite3
+from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from dp.index.store import delete_windows
@@ -91,8 +96,19 @@ class BuildResult:
     steps_reset: list[int] = field(default_factory=list)  # ids whose video changed
 
 
-def build_episodes(conn: sqlite3.Connection) -> BuildResult:
+Classifier = Callable[[str, list[str], int | None], Parsed]
+SeasonOf = Callable[[list[str]], int | None]
+PARSERS: dict[str, tuple[Classifier, SeasonOf]] = {"drzavni_posao": (classify, season_of)}
+
+
+def build_episodes(conn: sqlite3.Connection, parser: str = "drzavni_posao") -> BuildResult:
     """Classify all videos and sync the episodes table (idempotent; rows are only retired)."""
+    if parser not in PARSERS:
+        raise ValueError(
+            f"unknown catalog parser {parser!r}; known: {sorted(PARSERS)}. "
+            "A new series adds its title parser to dp.catalog.classify.PARSERS."
+        )
+    classify_title, season_from = PARSERS[parser]
     rows = conn.execute(
         "SELECT video_id, title, duration_s, playlists, missing FROM videos"
     ).fetchall()
@@ -103,7 +119,7 @@ def build_episodes(conn: sqlite3.Connection) -> BuildResult:
     with conn:
         for r in rows:
             playlists = json.loads(r["playlists"])
-            p = classify(r["title"], playlists, r["duration_s"])
+            p = classify_title(r["title"], playlists, r["duration_s"])
             by_kind[p.kind] = by_kind.get(p.kind, 0) + 1
             conn.execute(
                 "UPDATE videos SET kind=?, kind_reason=? WHERE video_id=?",
@@ -115,10 +131,10 @@ def build_episodes(conn: sqlite3.Connection) -> BuildResult:
             elif p.kind == "episode":
                 assert p.number is not None
                 candidates.setdefault(p.number, []).append(
-                    (r["video_id"], p, season_of(playlists), r["duration_s"])
+                    (r["video_id"], p, season_from(playlists), r["duration_s"])
                 )
             elif p.kind == "special":
-                specials.append((r["video_id"], p, season_of(playlists), r["duration_s"]))
+                specials.append((r["video_id"], p, season_from(playlists), r["duration_s"]))
 
         duplicates: dict[int, list[str]] = {}
         chosen: dict[int, tuple[str, Parsed, int | None, int | None]] = {}

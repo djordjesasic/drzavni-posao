@@ -19,7 +19,6 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-install-project
 
 COPY dp ./dp
-COPY seed ./seed
+COPY series ./series
 COPY tests ./tests
-COPY config.toml ./
 RUN uv sync --frozen

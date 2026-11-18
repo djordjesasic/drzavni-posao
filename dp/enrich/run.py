@@ -90,9 +90,9 @@ def enrich_episode(
     try:
         # Inside the try: an episode without a transcript raises here and must not abort
         # the whole batch.
-        bg_path = s.seed_characters.parent / "background.md"
+        bg_path = s.seed_dir / "background.md"
         background = bg_path.read_text(encoding="utf-8") if bg_path.exists() else ""
-        parts = prompt.build_parts(conn, episode_id, background)
+        parts = prompt.build_parts(conn, episode_id, background, prompt.load_system(s.seed_dir))
         if cfg.get("local"):
             wait_if_paused(s.pause_start, s.pause_end)
         t0 = time.monotonic()

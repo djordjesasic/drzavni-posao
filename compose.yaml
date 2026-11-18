@@ -1,8 +1,12 @@
+# One compose project per series: scripts run `docker compose -p <series> --env-file .env
+# --env-file series/<series>/series.env`, so the same file and image serve every series,
+# each with its own containers, data folder and ports. The default is drzavni-posao.
 name: drzavni-posao
 
 x-env: &env
   TZ: Europe/Belgrade
-  DP_CONFIG: /app/config.toml
+  # Picks series/<name>/config.toml and seed/ inside the image.
+  DP_SERIES: "${DP_SERIES:-drzavni-posao}"
   HOME: /data/home
   RUFF_CACHE_DIR: /tmp/ruff-cache
   # Same value as uvicorn's --port below, so allowed_hosts always matches the bind port.
@@ -16,7 +20,9 @@ x-common: &common
     - path: .env
       required: false
   volumes:
-    - ./data:/data
+    - ${DP_DATA_DIR:-./data}:/data
+    # Shared by every series: one Whisper request at a time on the whole machine.
+    - ./locks:/locks
 
 services:
   api:
@@ -31,7 +37,7 @@ services:
     environment:
       <<: *env
       # Host network: the embed service's name does not resolve here, its port does.
-      DP_EMBED_URL: http://127.0.0.1:8091
+      DP_EMBED_URL: http://127.0.0.1:${DP_EMBED_PORT:-8091}
     command:
       - uvicorn
       - dp.search.app:app
@@ -49,7 +55,7 @@ services:
 
   # bge-m3 embeddings on the CPU (text-embeddings-inference). No GPU: the mini PC's
   # GPU belongs to the other project. Reachable as http://embed from the worker and
-  # on 127.0.0.1:8091 from the host network (api); nothing is exposed outside.
+  # on 127.0.0.1:<DP_EMBED_PORT> from the host network (api); nothing is exposed outside.
   embed:
     image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.3
     user: "1000:1000"
@@ -58,8 +64,8 @@ services:
       HF_HOME: /data
       HUGGINGFACE_HUB_CACHE: /data
     volumes:
-      - ./data/models/tei:/data
+      - ${DP_DATA_DIR:-./data}/models/tei:/data
     ports:
-      - "127.0.0.1:8091:80"
+      - "127.0.0.1:${DP_EMBED_PORT:-8091}:80"
     cpus: 4
     restart: unless-stopped

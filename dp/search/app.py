@@ -32,7 +32,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         yield
 
 
-app = FastAPI(title="Državni posao", lifespan=lifespan)
+app = FastAPI(title=get_settings().series_title, lifespan=lifespan)
 
 
 @app.exception_handler(DatabaseNotReady)

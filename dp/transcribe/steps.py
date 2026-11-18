@@ -25,7 +25,8 @@ log = logging.getLogger(__name__)
 PROMPT_MAX_CHARS = 600
 # A chunk that loops is redone in pieces this long (no loops in the pilot experiment).
 RETRY_PIECE_S = 30.0
-# Lock file under data_dir that serializes our Whisper requests across processes.
+# Lock file in Settings.locks_dir (shared by every series on the machine) that
+# serializes our Whisper requests across processes and containers.
 WHISPER_LOCK = "whisper.lock"
 # Temp files (piece-*.wav, transcript .tmp) older than this are leftovers of a killed
 # process (docker stop: SIGKILL after 10 s, no finally). A live process may keep a piece
@@ -34,7 +35,8 @@ WHISPER_LOCK = "whisper.lock"
 STALE_TEMP_S = 3 * 3600
 
 
-def whisper_prompt(conn: sqlite3.Connection) -> str:
+def whisper_prompt(conn: sqlite3.Connection, start: str = "") -> str:
+    """`start` (config [transcribe] prompt, e.g. the show's name), then character names."""
     order = {"glavni": 0, "na_ekranu": 1, "samo_glas": 2, "samo_u_prici": 3}
     rows = sorted(
         conn.execute("SELECT id, name, kind FROM characters"),
@@ -54,7 +56,7 @@ def whisper_prompt(conn: sqlite3.Connection) -> str:
                 )
                 if a[0] != r["name"]
             ]
-    prompt = "Državni posao. "
+    prompt = start
     for name in names:
         nxt = f"{prompt}{name}, "
         if len(nxt) > PROMPT_MAX_CHARS:
@@ -122,7 +124,7 @@ class _Transcriber:
             audio.cut(self.wav, start, end, path)
             # Locked per piece, not per chunk/episode, so the other project's requests
             # can still get in between ours.
-            with whisper.server_lock(self.s.data_dir / WHISPER_LOCK):
+            with whisper.server_lock(self.s.locks_dir / WHISPER_LOCK):
                 # The lock wait may have run into the pause window.
                 wait_if_paused(self.s.pause_start, self.s.pause_end)
                 t0 = time.monotonic()  # after the lock: waiting is not Whisper's speed
@@ -327,7 +329,7 @@ def do_transcribe(
     chunks: list[list[float]] = json.loads((work / "chunks.json").read_text())
     out_path = s.transcripts_dir / f"{eid}.json"
     previous = _previous_chunks(out_path, video_id)
-    tr = _Transcriber(s, wav, work, whisper_prompt(conn))
+    tr = _Transcriber(s, wav, work, whisper_prompt(conn, s.whisper_prompt))
     out_chunks: list[dict[str, Any]] = []
     reused = retried = unresolved = 0
     s.transcripts_dir.mkdir(parents=True, exist_ok=True)

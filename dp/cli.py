@@ -83,7 +83,7 @@ def cmd_catalog_build(args: argparse.Namespace) -> None:
             f"steps are running {[tuple(b) for b in busy]}: stop the worker first "
             "(scripts/worker.sh stop), or use --force"
         )
-    r = classify.build_episodes(conn)
+    r = classify.build_episodes(conn, get_settings().catalog_parser)
     print(f"episodes: {r.episodes}, specials: {r.specials}")
     print(f"videos by kind: {dict(sorted(r.by_kind.items()))}")
     print(f"duplicate episode numbers: {r.duplicates}")
@@ -95,11 +95,12 @@ def cmd_catalog_build(args: argparse.Namespace) -> None:
         x[0] for x in conn.execute("SELECT id FROM episodes WHERE season IS NULL AND retired=0")
     ]
     print(f"no season: {no_season}")
-    odd = conn.execute(
-        """SELECT title, playlists FROM videos
-           WHERE kind != 'episode' AND missing=0 AND playlists LIKE '%DRŽAVNI POSAO %'"""
-    ).fetchall()
-    print(f"non-episodes inside season playlists: {[tuple(o) for o in odd]}")
+    if get_settings().catalog_parser == "drzavni_posao":
+        odd = conn.execute(
+            """SELECT title, playlists FROM videos
+               WHERE kind != 'episode' AND missing=0 AND playlists LIKE '%DRŽAVNI POSAO %'"""
+        ).fetchall()
+        print(f"non-episodes inside season playlists: {[tuple(o) for o in odd]}")
 
 
 def cmd_catalog_stats(_: argparse.Namespace) -> None:
@@ -251,17 +252,14 @@ def cmd_fetch_video(args: argparse.Namespace) -> None:
 
 def cmd_voice_profiles(_: argparse.Namespace) -> None:
     s = get_settings()
-    info = speakers.build_profiles(
-        s, _db(), speakers.get_embedder(s), s.seed_characters.parent / "voices.yaml"
-    )
+    info = speakers.build_profiles(s, _db(), speakers.get_embedder(s), s.seed_dir / "voices.yaml")
     print(json.dumps(info, ensure_ascii=False, indent=1))
 
 
 def cmd_eval(args: argparse.Namespace) -> None:
     s = get_settings()
-    res = eval_run.evaluate(
-        _db(), Path(args.questions), lambda texts: embed_client.embed(s.embed_url, texts)
-    )
+    questions = Path(args.questions) if args.questions else s.seed_dir / "test_questions.yaml"
+    res = eval_run.evaluate(_db(), questions, lambda texts: embed_client.embed(s.embed_url, texts))
     for q in res["questions"]:
         mark = "-" if not q["in_index"] else (q["rank"] or "x")
         print(f"[{mark:>2}] {q['expected']}  top={q['top']}  {q['query'][:70]}")
@@ -348,7 +346,7 @@ def main() -> None:
         "voice-profiles", help="build actor voice profiles from seed/voices.yaml"
     ).set_defaults(func=cmd_voice_profiles)
     ev = sub.add_parser("eval", help="test questions through search")
-    ev.add_argument("--questions", default="/app/seed/test_questions.yaml")
+    ev.add_argument("--questions", help="default: the series' seed/test_questions.yaml")
     ev.set_defaults(func=cmd_eval)
     se = sub.add_parser("search", help="search the index from the command line")
     se.add_argument("query")

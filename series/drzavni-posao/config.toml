@@ -1,12 +1,21 @@
 youtube_channel = "https://www.youtube.com/@DrzavniPosaoSerija"
 
+[series]
+# name: MCP server name (no spaces); title: what people see.
+name = "drzavni-posao"
+title = "Državni posao"
+
+[catalog]
+# How channel video titles become episodes (dp.catalog.classify.PARSERS).
+parser = "drzavni_posao"
+
 [paths]
-# Paths inside the containers. /data is /opt/drzavni-posao/data on the mini PC.
+# Paths inside the containers. /data is this series' data folder on the mini PC
+# (series.env DP_DATA_DIR; /opt/drzavni-posao/data for this series). The seed/ folder
+# next to this file is found on its own.
 data_dir = "/data"
 db = "/data/dp.sqlite"
 catalog_dir = "/data/catalog"
-seed_characters = "/app/seed/characters.yaml"
-seed_pilot = "/app/seed/pilot.yaml"
 
 [download]
 # Pause between YouTube downloads (seconds, random in this range).
@@ -18,6 +27,8 @@ video_height = 480
 
 [transcribe]
 language = "sr"
+# Whisper's initial prompt: the show's name, so it is spelled right.
+prompt = "Državni posao. "
 # Target length of one Whisper request; cuts are placed in the nearest silence.
 chunk_target_s = 150
 chunk_max_s = 180

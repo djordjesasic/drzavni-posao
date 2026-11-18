@@ -17,7 +17,8 @@ u [CLAUDE.md](CLAUDE.md).
   - koristi tuđe servise `whisper-server` (172.17.0.1:8081) i `llama-server` (172.17.0.1:8080),
     samo za čitanje; vidi pravila u [CLAUDE.md](CLAUDE.md)
 - **Podaci:** `data/` (SQLite baza, zvuk, transkripti) postoji samo na mini PC-u i nikad ne ide u
-  git. `seed/` je u gitu (likovi, glasovi, test pitanja).
+  git. `series/drzavni-posao/` je u gitu: `config.toml` i `seed/` (likovi, glasovi, uputstva
+  za opise i za Claude, test pitanja). Vidi „Više serija“ ispod.
 
 ## Prvo podešavanje
 
@@ -40,7 +41,7 @@ u [CLAUDE.md](CLAUDE.md).
    bash scripts/dp.sh catalog-build      # odbija dok neki korak radi; --force samo ako znaš zašto
    bash scripts/dp.sh catalog-stats
    ```
-6. **Profili glasova** (posle izmene `seed/voices.yaml`): `bash scripts/dp.sh voice-profiles`
+6. **Profili glasova** (posle izmene `series/drzavni-posao/seed/voices.yaml`): `bash scripts/dp.sh voice-profiles`
 
 Skripte se uvek pokreću kao `bash scripts/x.sh`, nikad sa `source`.
 
@@ -55,7 +56,7 @@ trenutku i nastavlja gde je stao. Sam poštuje pravila:
 - neuspeo korak se ponavlja posle 10 min, pa sve ređe (do 24 h); posle 5 neuspeha zaredom ostaje
   za ručnu proveru;
 - temperature se beleže svakog minuta; kad procesor, grafička ili disk pređu granicu iz
-  `config.toml` (`[worker]`), ne počinje novu epizodu dok se ne ohladi.
+  `series/drzavni-posao/config.toml` (`[worker]`), ne počinje novu epizodu dok se ne ohladi.
 
 | Komanda | Šta radi |
 |---|---|
@@ -80,7 +81,7 @@ bash scripts/dp.sh run --steps index --rebuild-index                # posle prom
 bash scripts/dp.sh enrich --model sonnet --episodes 612,739
 ```
 
-Modeli su u `config.toml` (`[enrich.models.*]`). Kad se transkript promeni, opis se sam označi
+Modeli su u `series/drzavni-posao/config.toml` (`[enrich.models.*]`). Kad se transkript promeni, opis se sam označi
 kao zastareo i čeka ponovni opis.
 
 ## Pretraga
@@ -110,7 +111,7 @@ kao zastareo i čeka ponovni opis.
 `POST /search` (`{"query": "...", "limit": 5}`), `GET /episodes/{id}`,
 `GET /episodes/{id}/transcript?start_s=..&end_s=..`
 
-**Test pitanja:** `bash scripts/dp.sh eval` (pitanja u `seed/test_questions.yaml`)
+**Test pitanja:** `bash scripts/dp.sh eval` (pitanja u `series/drzavni-posao/seed/test_questions.yaml`)
 
 ## Ostale skripte
 
@@ -121,6 +122,42 @@ kao zastareo i čeka ponovni opis.
 | `bash scripts/backup.sh` | kopija baze na Mac, u `backups/` |
 | `bash scripts/export_catalog.sh` | spisak epizoda u `exports/epizode.csv` |
 | `bash scripts/dp.sh <komanda>` | bilo koja `dp` komanda (`bash scripts/dp.sh --help`) |
+
+## Više serija
+
+Kod je jedan, a svaka serija ima svoj folder `series/<ime>/` i radi kao poseban compose projekat:
+svoji kontejneri, svoja baza i podaci, svoj port i svoj MCP server u Claude Desktop-u.
+Zajednički su samo kod, Docker slika, tajne u `.env` i zaključavanje Whisper-a
+(`locks/`, jedan zahtev u isto vreme za sve serije zajedno).
+
+```
+series/<ime>/
+  config.toml              kanal, [series] ime i naslov, [catalog] parser, modeli, granice
+  series.env               DP_SERIES, DP_DATA_DIR (npr. ./data-<ime>), DP_API_PORT, DP_EMBED_PORT
+  seed/
+    characters.yaml        registar likova
+    voices.yaml            isečci glasova
+    enrich_system.md       uputstvo za opise (šta je serija, ko su glavni likovi)
+    mcp_instructions.md    uputstvo za Claude-a u Desktop-u
+    background.md          pozadina serije (opciono)
+    test_questions.yaml    test pitanja
+```
+
+Skripte rade na seriji iz `DP_SERIES` (podrazumevano `drzavni-posao`):
+
+```bash
+DP_SERIES=<ime> bash scripts/deploy.sh
+DP_SERIES=<ime> bash scripts/worker.sh start
+DP_SERIES=<ime> bash scripts/progress.sh
+```
+
+Nova serija:
+1. Kopiraj `series/drzavni-posao/` u `series/<ime>/`; u `series.env` promeni `DP_SERIES`,
+   `DP_DATA_DIR`, `DP_EMBED_PORT` i dodaj `DP_API_PORT` (svi različiti od drugih serija).
+2. U `config.toml` promeni kanal i `[series]`; prepiši `seed/` za novu seriju.
+3. Ako naslovi videa nisu u obliku „DRŽAVNI POSAO - Ep.N: …“, dodaj parser u
+   `dp/catalog/classify.py` (`PARSERS`) i upiši ga u `[catalog] parser`.
+4. `DP_SERIES=<ime> bash scripts/deploy.sh`, pa katalog i probu na 2–3 epizode.
 
 ## Razvoj
 

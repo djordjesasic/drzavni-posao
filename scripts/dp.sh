@@ -6,4 +6,4 @@ source "$(dirname "$0")/common.sh"
 # Arguments are quoted so the remote shell passes them through literally.
 args=""
 if (($#)); then args="$(shell_quote "$@")"; fi
-remote "docker compose --profile worker run --rm -T worker python -m dp.cli $args"
+remote "$COMPOSE --profile worker run --rm -T worker python -m dp.cli $args"

@@ -13,7 +13,7 @@ from dp.enrich.prompt import PROMPT_VERSION
 from dp.index import build
 from dp.text import fold
 
-SEED = Path(__file__).parent.parent / "seed" / "characters.yaml"
+SEED = Path(__file__).parent.parent / "series" / "drzavni-posao" / "seed" / "characters.yaml"
 TOKEN = "test-token"
 VOCAB = ["telefon", "mama", "sendvic", "laptop"]
 

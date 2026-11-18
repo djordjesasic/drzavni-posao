@@ -1,4 +1,9 @@
-"""Load config.toml into a typed settings object."""
+"""Load a series' config.toml into a typed settings object.
+
+Every series (TV show, YouTube channel...) lives in series/<name>/: config.toml next to its
+seed/ folder (characters, voices, prompts, test questions). DP_SERIES picks the series
+(default drzavni-posao); DP_CONFIG, if set, points at a config.toml directly.
+"""
 
 import os
 import tomllib
@@ -38,6 +43,20 @@ class Settings:
     worker_limits: dict[str, float] = field(default_factory=dict)
     # [download] keep the video up to this height; 0 = audio only
     video_height: int = 0
+    # [series] short name (MCP server name) and the title shown to people
+    series_name: str = "drzavni-posao"
+    series_title: str = "Državni posao"
+    # Locks shared by every series on the machine (one Whisper request at a time).
+    locks_dir: Path = Path("/locks")
+    # [transcribe] prompt: Whisper's initial prompt (names, spelling of the show)
+    whisper_prompt: str = ""
+    # [catalog] parser: how video titles become episodes (dp.catalog.classify)
+    catalog_parser: str = "drzavni_posao"
+
+    @property
+    def seed_dir(self) -> Path:
+        """The series' seed/ folder (characters, voices, prompts, test questions)."""
+        return self.seed_characters.parent
 
     @property
     def audio_dir(self) -> Path:
@@ -53,18 +72,33 @@ class Settings:
         return self.data_dir / "transcripts"
 
 
+def config_path() -> Path:
+    """DP_CONFIG, else series/<DP_SERIES>/config.toml (relative to the working directory:
+    /app in the containers, the repo root in development)."""
+    if explicit := os.environ.get("DP_CONFIG"):
+        return Path(explicit)
+    return Path("series") / (os.environ.get("DP_SERIES") or "drzavni-posao") / "config.toml"
+
+
 @cache
 def get_settings() -> Settings:
-    path = Path(os.environ.get("DP_CONFIG", "config.toml"))
+    path = config_path().resolve()
     raw = tomllib.loads(path.read_text(encoding="utf-8"))
     paths, services, schedule = raw["paths"], raw["services"], raw["schedule"]
+    seed = path.parent / "seed"
+    series = raw.get("series", {})
     return Settings(
         youtube_channel=raw["youtube_channel"].rstrip("/"),
         data_dir=Path(paths["data_dir"]),
         db=Path(os.environ.get("DP_DB", paths["db"])),
         catalog_dir=Path(paths["catalog_dir"]),
-        seed_characters=Path(paths["seed_characters"]),
-        seed_pilot=Path(paths["seed_pilot"]),
+        seed_characters=seed / "characters.yaml",
+        seed_pilot=seed / "pilot.yaml",
+        series_name=series.get("name", path.parent.name),
+        series_title=series.get("title", path.parent.name),
+        locks_dir=Path(paths.get("locks_dir", "/locks")),
+        whisper_prompt=raw["transcribe"].get("prompt", ""),
+        catalog_parser=raw.get("catalog", {}).get("parser", "drzavni_posao"),
         whisper_url=services["whisper_url"],
         llama_url=services["llama_url"],
         pause_start=schedule["pause_start"],

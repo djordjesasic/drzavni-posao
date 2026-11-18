@@ -15,7 +15,7 @@ from dp.enrich import client, prompt
 from dp.enrich import run as enrich_run
 from dp.enrich.store import index_description
 
-SEED = Path(__file__).parent.parent / "seed" / "characters.yaml"
+SEED = Path(__file__).parent.parent / "series" / "drzavni-posao" / "seed" / "characters.yaml"
 
 
 @pytest.fixture
@@ -48,6 +48,7 @@ def _settings(tmp_path: Path) -> Settings:
         seed_characters=SEED, seed_pilot=tmp_path, whisper_url="", llama_url="",
         pause_start="00:00", pause_end="00:00", api_allowed_hosts=[], api_token=None,
         download_pause_s=(0, 0), language="sr", chunk_target_s=150, chunk_max_s=180,
+        locks_dir=tmp_path,
         enrich_models={"fake": {"base_url": "http://x/v1", "model": "m"}},
     )  # fmt: skip
 

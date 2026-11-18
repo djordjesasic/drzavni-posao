@@ -8,4 +8,4 @@ case "$service" in
   api | worker) ;;
   *) echo "usage: $0 [api|worker]" >&2; exit 2 ;;
 esac
-remote_tty "docker compose --profile worker run --rm $service bash"
+remote_tty "$COMPOSE --profile worker run --rm $service bash"

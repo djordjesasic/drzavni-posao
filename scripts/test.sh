@@ -24,5 +24,5 @@ args=""
 if (($#)); then args="$(shell_quote "$@")"; fi
 # shellcheck disable=SC2029
 ssh "$REMOTE_HOST" "cd ~/$DEST && docker build -q -f docker/Dockerfile -t drzavni-posao-test:$NAME . >/dev/null \
-  && docker run --rm -e RUFF_CACHE_DIR=/tmp/ruff -e DP_CONFIG=/app/config.toml drzavni-posao-test:$NAME \
+  && docker run --rm -e RUFF_CACHE_DIR=/tmp/ruff drzavni-posao-test:$NAME \
      sh -c 'pytest -q \"\$@\" && ruff check dp tests && ruff format --check dp tests' sh $args"

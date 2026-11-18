@@ -7,7 +7,7 @@ from dp.catalog.characters import load_seed, parse_seed
 from dp.db import connect, migrate
 from dp.search.catalog import find_characters
 
-SEED = Path(__file__).parent.parent / "seed" / "characters.yaml"
+SEED = Path(__file__).parent.parent / "series" / "drzavni-posao" / "seed" / "characters.yaml"
 
 
 def test_seed_parses() -> None:

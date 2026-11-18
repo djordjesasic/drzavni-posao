@@ -7,7 +7,7 @@ source "$(dirname "$0")/common.sh"
 remote_file="exports/epizode.csv" # relative to data/ on the mini PC (/data in the container)
 local_file="$REPO_DIR/exports/epizode.csv"
 
-remote "docker compose --profile worker run --rm -T worker \
+remote "$COMPOSE --profile worker run --rm -T worker \
   python -m dp.cli export-episodes /data/$remote_file"
 mkdir -p "$(dirname "$local_file")"
 scp -q "$REMOTE_HOST:$REMOTE_DIR/data/$remote_file" "$local_file"

@@ -15,7 +15,7 @@ from dp.transcribe import quality, steps
 from dp.transcribe.audio import parse_silences, plan_chunks
 from dp.transcribe.steps import PROMPT_MAX_CHARS, split_points, whisper_prompt
 
-SEED = Path(__file__).parent.parent / "seed" / "characters.yaml"
+SEED = Path(__file__).parent.parent / "series" / "drzavni-posao" / "seed" / "characters.yaml"
 
 
 def _at(h: int, m: int) -> datetime:
@@ -115,14 +115,14 @@ def test_plan_chunks_with_edges() -> None:
 
 def test_whisper_prompt_fits(conn) -> None:  # type: ignore[no-untyped-def]
     load_seed(conn, parse_seed(SEED))
-    prompt = whisper_prompt(conn)
+    prompt = whisper_prompt(conn, "Državni posao. ")
     assert len(prompt) <= PROMPT_MAX_CHARS + 1
     assert prompt.startswith("Državni posao. Boškić") or "Čvarkov" in prompt
 
 
 def test_whisper_prompt_has_main_full_name_aliases(conn) -> None:  # type: ignore[no-untyped-def]
     load_seed(conn, parse_seed(SEED))
-    prompt = whisper_prompt(conn)
+    prompt = whisper_prompt(conn, "Državni posao. ")
     assert "Dragan Jove Torbica" in prompt
     assert prompt.index("Dragan Jove Torbica") < prompt.index("Jagoda")
 
@@ -182,6 +182,7 @@ def test_transcribe_retries_loops_and_reuses_good_chunks(
         seed_characters=SEED, seed_pilot=tmp_path, whisper_url="http://w", llama_url="http://l",
         pause_start="00:00", pause_end="00:00", api_allowed_hosts=[], api_token=None,
         download_pause_s=(0, 0), language="sr", chunk_target_s=150, chunk_max_s=180,
+        locks_dir=tmp_path,
     )  # fmt: skip
     work = s.work_dir / "1"
     work.mkdir(parents=True)
@@ -233,6 +234,7 @@ def _settings(tmp_path: Path) -> Settings:
         seed_characters=SEED, seed_pilot=tmp_path, whisper_url="http://w", llama_url="http://l",
         pause_start="00:00", pause_end="00:00", api_allowed_hosts=[], api_token=None,
         download_pause_s=(0, 0), language="sr", chunk_target_s=150, chunk_max_s=180,
+        locks_dir=tmp_path,
     )  # fmt: skip
 
 

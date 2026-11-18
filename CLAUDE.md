@@ -41,7 +41,8 @@ Pre bilo kakve radnje koja dira nešto van ovog projekta na mini PC-u, pitaj vla
 ## Podaci i tajne
 
 - `data/` postoji samo na mini PC-u i nikad ne ide u git.
-- `seed/` je u gitu: početni podaci koje daje vlasnik (`seed/characters.yaml`).
+- `series/drzavni-posao/seed/` je u gitu: početni podaci koje daje vlasnik (`characters.yaml`,
+  `voices.yaml`...). Svaka serija ima svoj folder `series/<ime>/` (vidi README, „Više serija“).
 - `.env` postoji samo na mini PC-u. U repou je samo `.env.example`. Nikad ne upisuj ključeve u kod ni u git.
 
 
@@ -51,5 +52,5 @@ Pre bilo kakve radnje koja dira nešto van ovog projekta na mini PC-u, pitaj vla
 - Svaki korak obrade upisuje status u bazu i mora moći da se prekine i nastavi bez ponavljanja.
 - Pre masovne obrade uvek prvo probaj na 2–3 epizode i pokaži rezultat.
 - Tekst iz serije je na srpskom, latinica i ćirilica. Čuvaj original, a za pretragu pravi latinicu bez kvačica.
-- Imena likova uvek proveravaj u `seed/characters.yaml` i u tabeli `characters`. Ne izmišljaj likove ni veze.
+- Imena likova uvek proveravaj u `series/<serija>/seed/characters.yaml` i u tabeli `characters`. Ne izmišljaj likove ni veze.
 - Kad nisi siguran šta vlasnik želi, pitaj umesto da pretpostaviš.

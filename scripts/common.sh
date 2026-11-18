@@ -6,6 +6,16 @@ if [[ -z "${BASH_SOURCE[0]:-}" ]]; then
   return 1 2>/dev/null || exit 1
 fi
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# Which series the scripts act on: DP_SERIES=<name> bash scripts/x.sh (series/<name>/).
+SERIES="${DP_SERIES:-drzavni-posao}"
+if [[ ! "$SERIES" =~ ^[a-z0-9][a-z0-9-]*$ || ! -f "$REPO_DIR/series/$SERIES/config.toml" ]]; then
+  echo "unknown series '$SERIES': expected series/$SERIES/config.toml" >&2
+  exit 1
+fi
+# Every series is its own compose project (containers, port, data folder) from the same
+# compose.yaml and image; series.env holds its non-secret settings, .env the shared secrets.
+COMPOSE="docker compose -p $SERIES --env-file .env --env-file series/$SERIES/series.env"
+
 # Guard: rsync --delete must only ever sync this project's root.
 if [[ ! -f "$REPO_DIR/compose.yaml" || ! -d "$REPO_DIR/dp" || ! -f "$REPO_DIR/PLAN.md" ]]; then
   echo "refusing to run: $REPO_DIR is not the drzavni-posao repo root" >&2
@@ -13,12 +23,14 @@ if [[ ! -f "$REPO_DIR/compose.yaml" || ! -d "$REPO_DIR/dp" || ! -f "$REPO_DIR/PL
 fi
 
 # One exclude list for every rsync to the mini PC. Excluded paths are also protected
-# from --delete, so the remote data/ and .env* stay. /data/ and /backups/ are anchored to
-# the transfer root, so a nested data/ (e.g. tests/data/) is still synced. Order matters: the first matching
-# rule wins, so .env.example is included before .env* is excluded.
+# from --delete, so the remote data/ (data-<series>/ of other series), locks/ and .env*
+# stay. /data/ and /backups/ are anchored to the transfer root, so a nested data/ (e.g.
+# tests/data/) is still synced. Order matters: the first matching rule wins, so
+# .env.example is included before .env* is excluded.
 RSYNC_EXCLUDES=(
   --include '.env.example' --exclude '.env*'
-  --exclude '.git/' --exclude '/data/' --exclude '/backups/' --exclude '/exports/' --exclude '.venv/'
+  --exclude '.git/' --exclude '/data/' --exclude '/data-*/' --exclude '/locks/'
+  --exclude '/backups/' --exclude '/exports/' --exclude '.venv/'
   --exclude '__pycache__/' --exclude '.pytest_cache/' --exclude '.ruff_cache/'
   --exclude '.DS_Store' --exclude '*.sqlite*'
 )
