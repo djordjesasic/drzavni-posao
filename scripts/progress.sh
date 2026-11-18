@@ -13,7 +13,7 @@ if ! [[ "$hours" =~ ^[0-9]+$ ]] || ((hours < 1)); then
   exit 2
 fi
 
-remote "docker compose exec -T api python - $hours" <<'PY'
+remote "$COMPOSE exec -T api python - $hours" <<'PY'
 import sqlite3
 import sys
 
