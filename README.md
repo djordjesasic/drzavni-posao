@@ -62,7 +62,7 @@ trenutku i nastavlja gde je stao. Sam poštuje pravila:
 | `bash scripts/worker.sh start` | pokreće radnika kao servis (preživi restart mini PC-a) |
 | `bash scripts/worker.sh stop` | zaustavlja ga; prekinut korak se vraća u red, bez kazne |
 | `bash scripts/worker.sh status` | da li radi |
-| `bash scripts/progress.sh` | koliko je epizoda gotovo, koraci po stanju, neuspeli koraci, poslednja temperatura |
+| `bash scripts/progress.sh [sati]` | koliko je epizoda gotovo, neuspeli koraci, poslednja temperatura; za poslednjih N sati (podrazumevano 12): epizoda na sat, vreme po koraku, čekanje zbog toplote i procena koliko je ostalo |
 | `bash scripts/logs.sh worker` | prati log radnika (Ctrl-C za izlaz; radnik nastavlja) |
 | `bash scripts/dp.sh worker --limit 3` | jednokratna proba na 3 epizode, bez servisa |
 
