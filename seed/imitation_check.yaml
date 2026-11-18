@@ -1,0 +1,28 @@
+# Provera: da li sistem po glasu prepoznaje kad Čvarkov imitira (2026-11-17).
+# Za svako mesto preslušaj ~10 s od tog minuta i upiši u "imitira":
+#   da  – Čvarkov tu imitira baš tog lika (Žiku, odnosno dođoša)
+#   ne  – Čvarkov govori normalno, ili imitira nekog drugog, ili to nije Čvarkov
+# U "napomena" po želji: koga zapravo imitira, ko govori...
+#
+# Rezultat (vlasnik, 2026-11-17): Žika 3/8, dođoš 1/8 -> imitacije se ne prepoznaju po
+# glasu; to ostaje opisu (Sonnet), po sadržaju.
+
+ziku:
+  - {mesto: "248 7:12", imitira: "da", napomena: ""}  # „…da se zove Mila, po mami moje“
+  - {mesto: "57 6:44", imitira: "da", napomena: ""}   # „Da si vrevo, evo je radica…“
+  - {mesto: "65 4:29", imitira: "ne", napomena: ""}   # „I on ovako izvuče, a onda se vrati gumica“
+  - {mesto: "173 4:12", imitira: "ne", napomena: ""}  # „Kako to misliš da si izgubila recept?“
+  - {mesto: "85 3:29", imitira: "ne", napomena: ""}   # „Ja ga nikad nisam…“
+  - {mesto: "429 1:59", imitira: "ne", napomena: "jeste imitacija, ali ne Žike"}  # „A on kaže: Franke, popa…“
+  - {mesto: "730 9:16", imitira: "ne", napomena: ""}  # „Ja sam idiot, ona je fina žena“
+  - {mesto: "117 2:50", imitira: "da", napomena: ""}  # „Glista, meni… kapijenu alkohola“
+
+dodjosa:
+  - {mesto: "2194 10:14", imitira: "da", napomena: ""}  # „I stavi da bude vruće varenike“
+  - {mesto: "161 1:57", imitira: "ne", napomena: ""}    # „Oni izgubi od Svetozareva!“
+  - {mesto: "1739 5:29", imitira: "ne", napomena: ""}   # „…nego ću vas tako usrane zatvoriti“
+  - {mesto: "124 5:55", imitira: "ne", napomena: ""}    # „Kosta nađi i dan danas je čito“
+  - {mesto: "148 5:09", imitira: "ne", napomena: "imitacija je na 5:06 i 5:14, ovde ne"}    # „…rakija, to se prizna“
+  - {mesto: "358 6:08", imitira: "ne", napomena: ""}    # „Stao tek u … parku kad sam vidio most“
+  - {mesto: "1772 9:03", imitira: "ne", napomena: ""}   # „A ti da se pečeš po hotelima…“
+  - {mesto: "297 1:00", imitira: "ne", napomena: ""}    # „Đorđe, Đorđe… Pobjeda je bila najveća“
