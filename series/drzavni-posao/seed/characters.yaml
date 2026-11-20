@@ -1,5 +1,5 @@
 # Početni registar likova – Državni posao
-# Putanja u repou: seed/characters.yaml
+# Putanja u repou: series/drzavni-posao/seed/characters.yaml
 #
 # vrsta:
 #   glavni        – jedan od tri glavna lika
@@ -45,7 +45,20 @@ dvostruke_uloge:
     nadimci: [Stevica]
     opis: Đorđev brat, prodavac usecerenih jabuka
 
+  - id: boskicev_brat_od_strica
+    ime: Boškićev brat od strica
+    vrsta: na_ekranu
+    igra: boskic
+    nadimci: []
+    opis: Boškićev brat od strica (u novijim sezonama, npr. ep. 1772); ime nije poznato, možda se i ne pominje.
+
 na_ekranu:
+  - id: prelepi_miske
+    ime: Prelepi Miške
+    vrsta: na_ekranu
+    nadimci: [Miške]
+    opis: lik iz novijih sezona; u ep. 1556 osumnjičeni koga Dragan ispituje (vezan za stolicu, u crvenom sakou i perici).
+
   - id: dusko_postar
     ime: Duško poštar
     vrsta: na_ekranu
@@ -201,7 +214,7 @@ samo_u_prici:
     ime: Mitar Mitra Mitar
     vrsta: samo_u_prici
     nadimci: []
-    opis:
+    opis: jedna od najpoznatijih stranaka kojoj predmet nikad nije resen; iz istocne srbije; arhivatori ga se plase zbog vlaske magije
 
   - id: cevara_marjanovic
     ime: Ćevara Marjanović
@@ -219,7 +232,7 @@ samo_u_prici:
     ime: Joja
     vrsta: samo_u_prici
     nadimci: []
-    opis:
+    opis: Draganov rodjak, majstor za sve
 
   - id: radenko_salapura
     ime: Radenko Salapura Tetak
@@ -237,7 +250,7 @@ samo_u_prici:
     ime: Ildika
     vrsta: samo_u_prici
     nadimci: []
-    opis:
+    opis: radnica u menzi
 
 # Dodato sa sr.wikipedia (stranica serije), 14. 11. 2026, uz odobrenje vlasnika.
 sa_wikipedije:
