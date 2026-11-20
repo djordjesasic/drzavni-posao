@@ -182,6 +182,20 @@ MIGRATIONS: list[str] = [
     );
     CREATE INDEX worker_health_at ON worker_health(at);
     """,
+    # 12: descriptions made through the Message Batches API (results come back up to a day
+    # later, so what was sent is kept here and collected by `dp enrich-batch collect`)
+    """
+    CREATE TABLE enrich_batches (
+        id              TEXT PRIMARY KEY,                     -- Anthropic batch id
+        model           TEXT NOT NULL,                        -- config name
+        prompt_version  INTEGER NOT NULL,
+        episodes        TEXT NOT NULL,                        -- JSON {episode_id: video_id}
+        submitted_at    TEXT NOT NULL DEFAULT (datetime('now')),  -- UTC
+        status          TEXT NOT NULL DEFAULT 'submitted',    -- submitted | collected
+        collected_at    TEXT,
+        summary         TEXT                                  -- JSON counts after collect
+    );
+    """,
 ]
 
 

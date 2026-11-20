@@ -11,10 +11,12 @@ from dp import pilot, pipeline, worker
 from dp.catalog import characters, classify, export, youtube
 from dp.config import get_settings
 from dp.db import active_video_id, connect, migrate
+from dp.enrich import batch as enrich_batch
 from dp.enrich import frames
 from dp.enrich import run as enrich_run
 from dp.eval import run as eval_run
 from dp.index import embed as embed_client
+from dp.index import notes as index_notes
 from dp.index import search as index_search
 from dp.services import check_services
 from dp.transcribe import download, speakers
@@ -250,6 +252,47 @@ def cmd_fetch_video(args: argparse.Namespace) -> None:
         raise SystemExit(f"{len(failed)} episode(s) failed: {failed}")
 
 
+def cmd_enrich_batch(args: argparse.Namespace) -> None:
+    s = get_settings()
+    conn = _db()
+    if args.action == "submit":
+        only = [int(x) for x in args.episodes.split(",")] if args.episodes else None
+        ids = enrich_batch.candidates(s, conn, args.model, args.limit or None, only)
+        print(f"{len(ids)} episodes to send: {ids[:5]}{' ...' if len(ids) > 5 else ''}")
+        if ids and not args.dry_run:
+            print(f"batches: {enrich_batch.submit(s, conn, args.model, ids)}")
+    elif args.action == "collect":
+        print(json.dumps(enrich_batch.collect(s, conn)))
+    else:
+        for b in enrich_batch.status(conn):
+            print(json.dumps(b))
+
+
+def cmd_notes(_: argparse.Namespace) -> None:
+    """Check seed/notes.yaml and re-index the episodes whose notes may have changed (with
+    notes now, or with note windows from before). Episodes not indexed yet get their
+    notes when the worker indexes them."""
+    s = get_settings()
+    conn = _db()
+    try:
+        noted = index_notes.load(s.seed_dir)
+    except ValueError as e:
+        raise SystemExit(f"{index_notes.NOTES_FILE}: {e}") from None
+    unknown = sorted(e for e in noted if active_video_id(conn, e) is None)
+    if unknown:
+        print(f"not in the catalog (ignored): {unknown}")
+    before = {
+        r[0] for r in conn.execute("SELECT DISTINCT episode_id FROM windows WHERE kind='note'")
+    }
+    ids = sorted((set(noted) - set(unknown)) | before)
+    done = [e for e in ids if pipeline.is_done(conn, e, "index", active_video_id(conn, e) or "")]
+    for eid in done:
+        transcribe_steps.run_episode(s, conn, eid, ["index"], force=True)
+    waiting = sorted(set(ids) - set(done))
+    print(f"notes: {sum(len(v) for v in noted.values())} in {len(noted)} episodes; "
+          f"re-indexed {len(done)}; waiting for the worker: {waiting}")  # fmt: skip
+
+
 def cmd_voice_profiles(_: argparse.Namespace) -> None:
     s = get_settings()
     info = speakers.build_profiles(s, _db(), speakers.get_embedder(s), s.seed_dir / "voices.yaml")
@@ -337,6 +380,16 @@ def main() -> None:
     en.add_argument("--limit", type=int, default=0)
     en.add_argument("--force", action="store_true", help="redo episodes already described")
     en.set_defaults(func=cmd_enrich)
+    eb = sub.add_parser("enrich-batch", help="descriptions through the Message Batches API")
+    eb.add_argument("action", choices=["submit", "collect", "status"])
+    eb.add_argument("--model", default="sonnet_vision")
+    eb.add_argument("--limit", type=int, default=0, help="submit: at most this many episodes")
+    eb.add_argument("--episodes", help="submit: comma-separated ids instead of all ready ones")
+    eb.add_argument("--dry-run", action="store_true", help="submit: only list the episodes")
+    eb.set_defaults(func=cmd_enrich_batch)
+    sub.add_parser(
+        "notes", help="check seed/notes.yaml and re-index the noted episodes"
+    ).set_defaults(func=cmd_notes)
     fv = sub.add_parser("fetch-video", help="download only the video (for frames)")
     fv.add_argument("--episodes", help="comma-separated ids; default: the pilot set")
     fv.add_argument("--limit", type=int, default=0)

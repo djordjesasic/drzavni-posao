@@ -19,7 +19,7 @@ from dp.transcribe.speakers import OTHER, SURE_SCORE
 MAX_EXCERPT_S = 300  # one excerpt covers at most 5 minutes; ask again for more
 _MATCHED = {
     "summary": "opis", "moment": "opis", "story": "priča", "imitation": "imitacija",
-    "quote": "replika",
+    "quote": "replika", "note": "napomena",
 }  # fmt: skip
 
 _lock = threading.Lock()

@@ -77,8 +77,27 @@ bash scripts/dp.sh run --steps index --rebuild-index                # posle prom
 
 ## Opisi epizoda (LLM)
 
+Za veći broj epizoda koristi se Batch API (pola cene, rezultati za najviše 24 h). Glavni model je
+`sonnet_vision` (transkript + kadar na svakih 10 s); šalju se samo epizode koje imaju video i još
+nemaju opis.
+
 ```bash
-bash scripts/dp.sh enrich --model sonnet --episodes 612,739
+bash scripts/dp.sh enrich-batch submit --limit 400 --dry-run   # koje bi epizode otišle
+bash scripts/dp.sh enrich-batch submit --limit 400             # pošalji
+bash scripts/dp.sh enrich-batch status    # svaki batch: poslato, stanje kod Anthropic-a, brojevi
+bash scripts/dp.sh enrich-batch collect   # upiši rezultate završenih batch-eva (bezbedno ponoviti)
+```
+
+`status` za batch koji još nije preuzet pokazuje `api` (`in_progress` ili `ended`) i `counts`:
+koliko zahteva je još u obradi (`processing`), uspelo (`succeeded`) ili palo (`errored`,
+`expired`). Kad je `ended`, pokreni `collect`; opisi tada ulaze u pretragu kad radnik ponovo
+indeksira te epizode (sam, za par minuta). Isto se vidi i na console.anthropic.com, u delu
+Batches.
+
+Pojedinačno, bez Batch-a (odmah, punom cenom):
+
+```bash
+bash scripts/dp.sh enrich --model sonnet_vision --episodes 612,739
 ```
 
 Modeli su u `series/drzavni-posao/config.toml` (`[enrich.models.*]`). Kad se transkript promeni, opis se sam označi
@@ -111,6 +130,9 @@ kao zastareo i čeka ponovni opis.
 `POST /search` (`{"query": "...", "limit": 5}`), `GET /episodes/{id}`,
 `GET /episodes/{id}/transcript?start_s=..&end_s=..`
 
+**Tvoje napomene uz epizode:** upiši ih u `series/drzavni-posao/seed/notes.yaml` (uputstvo je u
+fajlu), pa `bash scripts/deploy.sh` i `bash scripts/dp.sh notes`.
+
 **Test pitanja:** `bash scripts/dp.sh eval` (pitanja u `series/drzavni-posao/seed/test_questions.yaml`)
 
 ## Ostale skripte
@@ -140,6 +162,7 @@ series/<ime>/
     enrich_system.md       uputstvo za opise (šta je serija, ko su glavni likovi)
     mcp_instructions.md    uputstvo za Claude-a u Desktop-u
     background.md          pozadina serije (opciono)
+    notes.yaml             tvoje napomene uz epizode (pretraga ih koristi)
     test_questions.yaml    test pitanja
 ```
 

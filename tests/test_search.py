@@ -57,7 +57,11 @@ def test_retired_windows_are_filtered_at_the_source(
         retired
     )
     vectors = search.Vectors(conn)
-    kept = {r[0] for r in conn.execute("SELECT id FROM windows WHERE episode_id != ?", (retired,))}
+    kept = {
+        r[0]
+        for r in conn.execute("SELECT id, kind FROM windows WHERE episode_id != ?", (retired,))
+        if r[1] not in search.NO_VECTOR_KINDS
+    }
     assert set(vectors.ids.tolist()) == kept
     # Unlinked (video_id NULL) counts as inactive too.
     conn.execute("UPDATE episodes SET retired=0, video_id=NULL WHERE id=?", (retired,))

@@ -145,3 +145,133 @@ pitanja:
     epizoda: 254
     tip: drugo
     napomena: "kratak upit; vidi se samo u slici"
+
+  - pitanje: "cvarkov i torbica u narodnim nosnjama obelezavaju dan zahvalnosti kada su starosedeoci doceklai dodjose"
+    epizoda: 640
+    tip: ""
+    napomena: "kostimi se vide samo na ekranu"
+  
+  - pitanje: "u kojoj epizodi dele polutke na tri dela i boskic dobije glavu"
+    epizoda: 642
+    tip: ""
+    napomena: ""
+
+  - pitanje: "kad cvarkov kaze boskicu da je do sad trebao da smrsa 400 kila po njegovoj evidenciji"
+    epizoda: 1061
+    tip: citat
+    napomena: ""
+
+  - pitanje: "boskic i torbica se raspravljaju oko rusije i nato a cvarkov je neutralan i hoce da trguje sa obe strane"
+    epizoda: 644
+    tip: ""
+    napomena: ""
+
+  - pitanje: "epizoda kada se silovicki prividja djavo djokica"
+    epizoda: 648
+    tip: ""
+    napomena: ""
+
+  - pitanje: "nadji epizodu kad dragan siri pelene u kancelariji da se suse"
+    epizoda: 818
+    tip: ""
+    napomena: "Claude Desktop nije nasao ovu epizodu sa ovakvim pitanjem. Odgovor pretrage: 'Pretraga po sadržaju je nije našla, ali postoji jak kandidat po naslovu: epizoda 1167, „Pelena“ (sezona 7, emitovana 6. 3. 2019, 8:12 min).' pelene se vide samo na slici"
+
+  - pitanje: "nadji epizodu kada je skoro celu epizodu kancelarija prazna, samo boskic pred kraj dolazi i seti se da je nikoljdan"
+    epizoda: 820
+    tip: ""
+    napomena: "Claude Desktop nije nasao ovu epizodu sa ovakvim pitanjem; vratio 475"
+
+  - pitanje: "nadji epizodu kad dragan prica kako je sanjao da radi u banci"
+    epizoda: 821
+    tip: ""
+    napomena: ""
+  
+  - pitanje: "nadji epizodu kad dragan prodaje kokice u uniformi"
+    epizoda: 435
+    tip: ""
+    napomena: ""
+
+  - pitanje: "nadji epizodu kad dragan donosi poligraf u kancelariju pa ga isprobaju na svoj trojici"
+    epizoda: 440
+    tip: ""
+    napomena: ""
+
+  - pitanje: "nadji epizodu kad je mrtvacki sanduk na stolu u kancelariji"
+    epizoda: 441
+    tip: ""
+    napomena: ""
+
+  - pitanje: "nadji epizodu kad neko otvori firmu na draganovo ime"
+    epizoda: 442
+    tip: ""
+    napomena: ""
+
+  - pitanje: "nadji epizodu kad boskic polomi bravu i onda ostanu zarobljeni u kancelariji"
+    epizoda: 448
+    tip: ""
+    napomena: ""
+
+  - pitanje: "kad vide da im neko ukrao hranu iz frizidera"
+    epizoda: 467
+    tip: ""
+    napomena: ""
+
+  - pitanje: "nadji epizodu kad tetak poziva boskica na svadbu"
+    epizoda: 469
+    tip: ""
+    napomena: ""
+
+  - pitanje: "nadji epizodu kad cvarkov saznaje da je umro demis rusos"
+    epizoda: 493
+    tip: ""
+    napomena: ""
+
+  - pitanje: "nadji epizodu kad dragan ide po nesto i vrati se bez toga jer je zaboravio, cvarkov ga opominje a dragan kaze tako i smiljka mene posalje po vanilin secer a ja zaboravim"
+    epizoda: 496
+    tip: ""
+    napomena: Claude Desktop nije nasao ovu epizodu, nije vratio nista posle ovog prompta. pitao je da napisem ako se secam po sta je torbica isao. napisao sam da je isao po pecat i tada je vratio 279 i 280.
+
+  - pitanje: "nadji epizodu gde cvarkov prica kako je zika dobio cetri samara od visekrune"
+    epizoda: 265
+    tip: ""
+    napomena: ""
+
+  - pitanje: "nadji epizodu kad cvarkov prica kako se zika posvadjao sa titom pa ga tito izbacio iz garde"
+    epizoda: 244
+    tip: ""
+    napomena: "Pretraga uspela na osnovu transkripta - epizoda nema opis."
+
+  - pitanje: "nadji epizodu kad torbica uci boskica licke kuke"
+    epizoda: 876
+    tip: radnja
+    napomena: Claude Desktop nije nasao ovu epizodu - nije nasao nista.
+
+  - pitanje: "nadji epizodu kad igraju pejntbol"
+    epizoda: 515
+    tip: ""
+    napomena: "claude desktop vratio 515 kao prvi rezultat, 514 kao drugi - oba tacna, dodatak claude desktopa: 'Priča počinje dan ranije, u epizodi 514, „Vojni otpad“ (2. 3. 2015). Pogledaj na YouTube-u Tu Torbica dolazi sa vojnog otpada sa maskirnom mrežom i opremom, a Boškić objašnjava da igra pejntbol. Verovatno se tu dogovaraju da idu zajedno.'"
+
+  - pitanje: "nadji epizodu kad cvarkov i boskic u laze u kancelariju i zaticu torbicu kako spava na stolu jer ga smiljaka izbacila iz kuce"
+    epizoda: 509
+    tip: ""
+    napomena: ""
+
+  - pitanje: "nadji epizodu kad dragan dolazi u kancelariju sa motornom testerom"
+    epizoda: 523
+    tip: ""
+    napomena: ""
+
+  - pitanje: "kad dragan okupa dobrosavljeva kad prodje ladom pored njega"
+    epizoda: 524
+    tip: ""
+    napomena: ""
+
+  - pitanje: "epizoda kad osnivaju vladu u senci"
+    epizoda: 526
+    tip: ""
+    napomena: ""
+
+  - pitanje: "epizoda kad misle da ih prisluskuju prislusnim uredjajem"
+    epizoda: 304
+    tip: ""
+    napomena: ""

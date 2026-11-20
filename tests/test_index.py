@@ -96,6 +96,16 @@ def test_summary_sentences_are_their_own_windows() -> None:
     ]
 
 
+def test_short_sentences_are_searched_by_words_only(tmp_path: Path) -> None:
+    s, conn = _db(tmp_path)
+    build.do_index(s, conn, 254, fake_embed)
+    kinds = dict(conn.execute("SELECT id, kind FROM windows").fetchall())
+    in_vectors = {kinds[int(i)] for i in search.Vectors(conn).ids}
+    assert "moment" in kinds.values() and not in_vectors & set(search.NO_VECTOR_KINDS)
+    hits = search.search(conn, "drogiran", lambda t: (_ for _ in ()).throw(OSError()))
+    assert hits and hits[0]["episode_id"] == 254  # the moment window, by words
+
+
 def test_word_search_matches_other_case_endings(tmp_path: Path) -> None:
     s, conn = _db(tmp_path)
     build.do_index(s, conn, 254, fake_embed)  # description: "... pojeo ovčiju glavu."

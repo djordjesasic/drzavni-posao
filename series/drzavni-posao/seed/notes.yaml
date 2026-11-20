@@ -1,0 +1,30 @@
+# Tvoje napomene uz epizode: ono što ni transkript ni kadrovi ne hvataju
+# (poenta, ko se pretvara, šta se zapravo desilo, kako ljudi pamte epizodu).
+# Pretraga ih koristi kao poseban deo indeksa; pogodak se u Claude Desktop-u vidi kao
+# „napomena“.
+#
+# Napomena je tvoj opis onoga što se dešava, tvojim rečima, kako bi to tražio. To nije
+# transkript ni uputstvo modelu: ide direktno u pretragu. Ako pamtiš repliku, i nju
+# možeš upisati kao napomenu.
+#
+# Oblik: broj epizode, pa jedna ili više napomena, na jedan od dva načina:
+#   - samo tekst napomene (link vodi na početak epizode), ili
+#   - {tekst: "...", minut: "m:ss"}, ista napomena, kad hoćeš da link vodi na taj minut.
+#
+#   254:
+#     - Torbica glumi da je drogiran da bi sam pojeo ovčiju glavu
+#     - {tekst: "Torbica ljubi ovčiju glavu", minut: "5:54"}
+#
+# Posle izmene: bash scripts/deploy.sh, pa bash scripts/dp.sh notes
+# (proveri fajl i osveži pretragu za te epizode; neobrađene dobiju napomene kad radnik
+# stigne do njih).
+#
+# Napomena: ne prepisuj ovde test pitanja doslovno, jer bi provera pretrage onda bila
+# prelaka.
+
+254:
+  - Torbica glumi da je drogiran da bi sam pojeo ovčiju glavu
+  - {tekst: "Torbica ljubi ovčiju glavu", minut: "5:54"}
+
+876:
+  - Torbica na pocetku epizode uci boskica da igra licke kuke

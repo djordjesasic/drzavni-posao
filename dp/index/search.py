@@ -17,6 +17,10 @@ RRF_K = 60
 # candidate slots nor memory (the same active-episode rule as dp.db.active_video_id).
 ACTIVE_EPISODE = "e.retired = 0 AND e.video_id IS NOT NULL"  # e = episodes
 PER_LIST = 50  # windows taken from each list before fusion
+# Single description sentences and quotes are short, so their vectors sit close to almost
+# any query naming a character and crowd the meaning list ("Čvarkov ga odbija."); they
+# are found by words only. Measured on the test questions: top5 34 -> 35, top20 39 -> 41.
+NO_VECTOR_KINDS = ("moment", "quote")
 _WORD = re.compile(r"[a-z0-9]{3,}")
 # Very common words that only add noise to an OR query.
 _STOP = {
@@ -55,12 +59,15 @@ def _fts(conn: sqlite3.Connection, query: str) -> list[int]:
 
 
 class Vectors:
-    """All window vectors in memory (tens of thousands x 1024 floats: fine)."""
+    """Window vectors in memory (tens of thousands x 1024 floats: fine), except the kinds
+    searched by words only (NO_VECTOR_KINDS)."""
 
     def __init__(self, conn: sqlite3.Connection) -> None:
+        skip = ",".join("?" * len(NO_VECTOR_KINDS))
         rows = conn.execute(
             "SELECT w.id, w.embedding FROM windows w JOIN episodes e ON e.id = w.episode_id "
-            f"WHERE {ACTIVE_EPISODE} ORDER BY w.id"
+            f"WHERE {ACTIVE_EPISODE} AND w.kind NOT IN ({skip}) ORDER BY w.id",
+            NO_VECTOR_KINDS,
         ).fetchall()
         self.ids = np.array([r[0] for r in rows], dtype=np.int64)
         self.m = (

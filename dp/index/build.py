@@ -2,6 +2,7 @@
 each stored with a vector (semantic search) and in FTS5 (word search)."""
 
 import json
+import logging
 import re
 import sqlite3
 from collections.abc import Callable
@@ -12,10 +13,12 @@ import numpy as np
 from dp.config import Settings
 from dp.enrich.store import index_description
 from dp.index import embed as embed_client
+from dp.index import notes
 from dp.index.store import delete_windows
 from dp.text import fold
 from dp.transcribe.speakers import SURE_SCORE
 
+log = logging.getLogger(__name__)
 Embed = Callable[[list[str]], np.ndarray]
 _MMSS = re.compile(r"^\s*(\d+):(\d{1,2})")
 _SENTENCE = re.compile(r"(?<=[.!?])\s+")
@@ -162,6 +165,10 @@ def do_index(
     row = index_description(conn, eid, s.index_enrich_models, ep["video_id"])
     if row:
         wins += description_windows(ep["title"], json.loads(row["data"]))
+    try:
+        wins += notes.windows(notes.load(s.seed_dir).get(eid, []))
+    except ValueError as e:  # a typo in the owner's file must not stop the worker
+        log.warning("%s ignored: %s (check it with `dp notes`)", notes.NOTES_FILE, e)
     # Keep windows whose content is unchanged (e.g. all transcript windows after a new
     # description) so only new ones are embedded; the result equals a full rebuild.
     existing: dict[tuple[Any, ...], list[int]] = {}
