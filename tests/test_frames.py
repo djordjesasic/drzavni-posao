@@ -37,13 +37,11 @@ def test_vision_model_sends_frames_and_needs_the_video(
 ) -> None:
     seen: dict[str, Any] = {}
 
-    def fake_claude(
-        cfg: dict[str, Any], system: str, stable: str, episode: str, images: Any = None
-    ) -> client.Reply:
-        seen.update(system=system, images=images)
+    def fake_claude(cfg: dict[str, Any], p: dict[str, Any]) -> client.Reply:
+        seen.update(system=p["system"], images=p["messages"][0]["content"][2:])
         return client.Reply('{"summary": "x"}', 3000, 500)
 
-    monkeypatch.setattr(enrich_run.claude, "chat", fake_claude)
+    monkeypatch.setattr(enrich_run.claude, "chat_params", fake_claude)
     s = _settings(tmp_path)
     s.enrich_models["v"] = {"api": "anthropic", "model": "m", "frames_every_s": 10}
     info = enrich_run.enrich_episode(s, conn, 254, "v")

@@ -45,7 +45,8 @@ def conn(tmp_path: Path):  # type: ignore[no-untyped-def]
 def _settings(tmp_path: Path) -> Settings:
     return Settings(
         youtube_channel="", data_dir=tmp_path, db=tmp_path / "t.sqlite", catalog_dir=tmp_path,
-        seed_characters=SEED, seed_pilot=tmp_path, whisper_url="", llama_url="",
+        seed_characters=tmp_path / "seed" / "characters.yaml", seed_pilot=tmp_path,
+        whisper_url="", llama_url="",
         pause_start="00:00", pause_end="00:00", api_allowed_hosts=[], api_token=None,
         download_pause_s=(0, 0), language="sr", chunk_target_s=150, chunk_max_s=180,
         locks_dir=tmp_path,
@@ -147,11 +148,13 @@ def test_enrich_claude_gets_stable_part_separately(
 ) -> None:
     seen: dict[str, str] = {}
 
-    def fake_claude(cfg: dict[str, Any], system: str, stable: str, episode: str) -> client.Reply:
-        seen.update(system=system, stable=stable, episode=episode)
+    def fake_claude(cfg: dict[str, Any], p: dict[str, Any]) -> client.Reply:
+        stable, episode = (b["text"] for b in p["messages"][0]["content"])
+        assert p["messages"][0]["content"][0]["cache_control"] == {"type": "ephemeral"}
+        seen.update(system=p["system"], stable=stable, episode=episode)
         return client.Reply('{"summary": "x"}', 3000, 500, tokens_cached=2000)
 
-    monkeypatch.setattr(enrich_run.claude, "chat", fake_claude)
+    monkeypatch.setattr(enrich_run.claude, "chat_params", fake_claude)
     s = _settings(tmp_path)
     s.enrich_models["c"] = {"api": "anthropic", "model": "claude-haiku-5-5"}
     info = enrich_run.enrich_episode(s, conn, 254, "c")

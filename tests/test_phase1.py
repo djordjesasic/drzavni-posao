@@ -179,7 +179,8 @@ def test_transcribe_retries_loops_and_reuses_good_chunks(
 ) -> None:
     s = Settings(
         youtube_channel="", data_dir=tmp_path, db=tmp_path / "t.sqlite", catalog_dir=tmp_path,
-        seed_characters=SEED, seed_pilot=tmp_path, whisper_url="http://w", llama_url="http://l",
+        seed_characters=tmp_path / "seed" / "characters.yaml", seed_pilot=tmp_path,
+        whisper_url="http://w", llama_url="http://l",
         pause_start="00:00", pause_end="00:00", api_allowed_hosts=[], api_token=None,
         download_pause_s=(0, 0), language="sr", chunk_target_s=150, chunk_max_s=180,
         locks_dir=tmp_path,
@@ -231,7 +232,8 @@ def test_transcribe_retries_loops_and_reuses_good_chunks(
 def _settings(tmp_path: Path) -> Settings:
     return Settings(
         youtube_channel="", data_dir=tmp_path, db=tmp_path / "t.sqlite", catalog_dir=tmp_path,
-        seed_characters=SEED, seed_pilot=tmp_path, whisper_url="http://w", llama_url="http://l",
+        seed_characters=tmp_path / "seed" / "characters.yaml", seed_pilot=tmp_path,
+        whisper_url="http://w", llama_url="http://l",
         pause_start="00:00", pause_end="00:00", api_allowed_hosts=[], api_token=None,
         download_pause_s=(0, 0), language="sr", chunk_target_s=150, chunk_max_s=180,
         locks_dir=tmp_path,

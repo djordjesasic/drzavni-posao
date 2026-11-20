@@ -277,3 +277,37 @@ def test_eval_counts_only_indexed_questions(tmp_path: Path) -> None:
     res = eval_run.evaluate(conn, qs, fake_embed)
     assert (res["top1"], res["top5"]) == ("2/2", "2/2")
     assert [q["in_index"] for q in res["questions"]] == [True, True, False, False]
+
+
+def test_notes_parse_both_forms_and_reject_bad_entries() -> None:
+    from dp.index import notes
+
+    got = notes.parse({254: ["Torbica glumi", {"tekst": "Ljubi glavu", "minut": "5:54"}],
+                       "612": "Mama da dođe", 1: ["  "]})  # fmt: skip
+    assert got == {
+        254: [{"text": "Torbica glumi", "start_ms": None},
+              {"text": "Ljubi glavu", "start_ms": 354_000}],
+        612: [{"text": "Mama da dođe", "start_ms": None}],
+    }  # fmt: skip
+    assert notes.parse(None) == {}
+    for bad in ({"x": ["a"]}, {1: [{"minut": "1:00"}]}, {1: [{"tekst": "a", "minut": "5"}]}):
+        try:
+            notes.parse(bad)
+        except ValueError:
+            continue
+        raise AssertionError(f"accepted {bad}")
+
+
+def test_owner_notes_are_searchable_with_their_minute(tmp_path: Path) -> None:
+    s, conn = _db(tmp_path)
+    s.seed_dir.mkdir(parents=True, exist_ok=True)
+    (s.seed_dir / "notes.yaml").write_text(
+        '612:\n  - {tekst: "Dragan se pravi drogiran zbog ovčije glave", minut: "3:10"}\n'
+    )
+    for eid in (254, 612, 487):
+        build.do_index(s, conn, eid, fake_embed)
+    note = conn.execute("SELECT episode_id, start_ms FROM windows WHERE kind='note'").fetchall()
+    assert [tuple(r) for r in note] == [(612, 190_000)]
+    # A broken file is reported, not fatal: the episode is still indexed without notes.
+    (s.seed_dir / "notes.yaml").write_text("612:\n  - {minut: 3}\n")
+    assert build.do_index(s, conn, 612, fake_embed)["windows"].get("note") is None
