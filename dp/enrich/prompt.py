@@ -58,11 +58,14 @@ _STR_LIST: dict[str, Any] = {"type": "array", "items": _STR}
 
 
 def _obj(props: dict[str, Any]) -> dict[str, Any]:
-    return {"type": "object", "properties": props, "required": list(props)}
+    return {
+        "type": "object", "properties": props, "required": list(props),
+        "additionalProperties": False,
+    }  # fmt: skip
 
 
-# The same shape as SCHEMA, as JSON Schema. llama-server turns it into a grammar,
-# so a local model cannot drift from the requested keys.
+# The same shape as SCHEMA, as JSON Schema. llama-server turns it into a grammar and the
+# Anthropic API takes it as a structured output, so no model can drift from the keys.
 JSON_SCHEMA: dict[str, Any] = _obj(
     {
         "summary": _STR,

@@ -10,6 +10,7 @@ from typing import Any
 
 import anthropic
 
+from dp.enrich import prompt
 from dp.enrich.client import Reply
 
 
@@ -37,8 +38,10 @@ def params(
             }
         ],
     }
+    # Structured output: the reply is always one JSON object of the description schema.
+    p["output_config"] = {"format": {"type": "json_schema", "schema": prompt.JSON_SCHEMA}}
     if effort := cfg.get("effort"):
-        p["output_config"] = {"effort": effort}
+        p["output_config"]["effort"] = effort
     return p
 
 
