@@ -103,7 +103,9 @@ allowed_hosts = ["llmserver"]
 [worker]
 # The worker starts no new episode while a temperature reaches its limit, and goes on
 # once every reading is margin_c below it. Idle readings 2026-11-15: cpu 53, gpu 53,
-# nvme 66 (its second sensor 85).
+# nvme 66 (its second sensor 85). The disk's own limits: warning 84, critical 89.
+# Until 2026-11-21 the kernel had pcie_aspm=off: the idle disk stayed at ~78, so the
+# worker waited 50-65% of the time. Without it the idle disk is ~70.
 cpu_c = 90
 gpu_c = 95
 nvme_c = 80

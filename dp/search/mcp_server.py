@@ -51,8 +51,9 @@ def search_episodes(query: str, limit: int = 10) -> dict[str, Any]:
     and by meaning. Use short queries, one memory or quote each, and run several.
     Returns indexed_episodes (how many episodes are searchable) and results, best first:
     episode, title, season, air date, minute and YouTube link of the best matching
-    moment, what matched (transkript, opis, priča, imitacija, replika), a snippet and a score.
-    limit is 1-20.
+    moment, what matched (transkript, opis, priča, imitacija, replika), a snippet, a score
+    and has_description. An episode without a description is found by its transcript only
+    and ranks lower; read its transcript before ruling it out. limit is 1-20.
     """
     if not query.strip():
         raise ToolError("query must not be empty")

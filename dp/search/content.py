@@ -63,12 +63,16 @@ def search_content(conn: sqlite3.Connection, query: str, limit: int = 10) -> lis
             [h["episode_id"] for h in hits],
         )
     }
+    models = get_settings().index_enrich_models
     out = []
     for h in hits:
         ep = eps.get(h["episode_id"])
         if ep is None:
             continue
         t = h["start_s"]
+        # Episodes the worker finished after the last description batch are searchable by
+        # transcript only, so they rank lower; the model should not dismiss them for that.
+        described = index_description(conn, ep["id"], models, ep["video_id"]) is not None
         out.append(
             {
                 "episode": ep["id"],
@@ -80,6 +84,7 @@ def search_content(conn: sqlite3.Connection, query: str, limit: int = 10) -> lis
                 "matched": _MATCHED.get(h["kind"], "transkript"),
                 "snippet": h["snippet"],
                 "score": h["score"],
+                "has_description": described,
             }
         )
     return out

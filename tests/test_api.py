@@ -237,7 +237,16 @@ def test_content_search_links_to_the_minute(client: TestClient) -> None:
     top = body["results"][0]
     assert top["episode"] == 2036 and top["title"] == "Na potpis"
     assert top["minute"] == "1:40" and top["youtube_url"].endswith("v=abc123&t=100s")
+    assert top["has_description"] is True
     assert client.post("/search", json={"query": ""}, headers=AUTH).status_code == 422
+
+
+def test_content_search_flags_episode_without_description(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("dp.search.content.index_description", lambda *a: None)
+    r = client.post("/search", json={"query": "sendvic na laptopu"}, headers=AUTH)
+    assert r.json()["results"][0]["has_description"] is False
 
 
 def test_content_search_without_embed_service_uses_words(

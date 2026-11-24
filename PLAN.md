@@ -365,6 +365,15 @@ Ovo je mesto gde se Claude najviše isplati, jer traži pažljivo čitanje i por
 
 **Faza 7: javna verzija.** Web interfejs nad istim API-jem. Javno bi išli sažeci, likovi, kratki isečci i linkovi na YouTube, a celi transkripti ostaju interni. Pre objave treba proveriti autorska prava i, po mogućstvu, javiti se autorima serije.
 
+Posetilac nema Claude Desktop, pa razgovor vodi server: isti postupak pretrage kao u `mcp_instructions.md` (više kratkih upita, čitanje transkripta kandidata, najviše 3 odgovora), preko Claude API-ja. Model se bira merenjem, ne procenom, i to tek kad su sve epizode obrađene:
+
+1. Skripta pušta pitanja iz `test_questions.yaml` kroz taj postupak, sa istim alatima kao MCP.
+2. Pokreće se za Haiku, Sonnet i Opus, na po dva-tri nivoa effort-a.
+3. Za svaki beleži: tačna epizoda prva / među prve tri, broj poziva alata, cenu i trajanje po pitanju.
+4. Bira se najjeftiniji model koji pogađa skoro koliko najbolji. Ako Haiku zaostaje samo na teškim pitanjima, proba se kombinacija: Haiku odgovara, a kad nije siguran, pitanje ide Sonnet-u.
+
+Lokalni Qwen ne dolazi u obzir: ima jedan slot koji deli sa drugim projektom i slabije razume nejasne opise. Merenje košta nekoliko dolara API kredita; tačan iznos se javlja vlasniku pre pokretanja.
+
 ## Procena vremena i troškova
 
 Lokalna obrada ne košta ništa i traje jednu do dve nedelje rada mašine. Claude API bi za opise svih epizoda koštao od oko 1,5 USD (Haiku 5.5) do oko 28 USD (Sonnet 5.5), jednokratno.
