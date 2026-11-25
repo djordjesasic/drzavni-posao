@@ -20,13 +20,13 @@ def _hwmon(root: Path, sensors: list[tuple[str, str, int]]) -> None:
             (h / "temp1_label").write_text(label + "\n")
 
 
-def test_read_temps_picks_the_three_sensors(tmp_path: Path) -> None:
+def test_read_temps_picks_the_sensors_and_the_hottest_ram_module(tmp_path: Path) -> None:
     _hwmon(
         tmp_path,
         [("acpitz", "", 53000), ("nvme", "Composite", 65850), ("k10temp", "Tctl", 53500),
-         ("amdgpu", "edge", 61000), ("spd5118", "", 65500)],
+         ("amdgpu", "edge", 61000), ("spd5118", "", 65500), ("spd5118", "", 67250)],
     )  # fmt: skip
-    assert worker.read_temps(tmp_path) == {"nvme": 65.85, "cpu": 53.5, "gpu": 61.0}
+    assert worker.read_temps(tmp_path) == {"nvme": 65.85, "cpu": 53.5, "gpu": 61.0, "ram": 67.25}
     assert worker.read_temps(tmp_path / "missing") == {}
 
 
@@ -38,6 +38,28 @@ def test_too_hot_has_hysteresis() -> None:
     assert not worker.too_hot({"cpu": 84.9}, lim, was_hot=True)
     assert worker.too_hot({"gpu": 50, "nvme": 81}, lim, was_hot=False)
     assert not worker.too_hot({}, lim, was_hot=True)  # no sensors: never blocks
+    assert worker.too_hot({"ram": 80}, lim, was_hot=False)
+    assert not worker.too_hot({"ram": 74.9}, lim, was_hot=True)
+
+
+def test_wait_until_cool_waits_mid_episode_until_cooled(tmp_path: Path) -> None:
+    hw = tmp_path / "hw"
+    _hwmon(hw, [("spd5118", "", 99000)])
+    temp = hw / "hwmon0" / "temp1_input"
+    h = worker.Health(tmp_path / "t.sqlite", worker.Limits(), hw)
+    h.state = "working"
+    readings = iter([90000, 76000, 74000])
+    sleeps: list[float] = []
+
+    def sleep(sec: float) -> None:
+        sleeps.append(sec)
+        temp.write_text(f"{next(readings)}\n")
+
+    h.wait_until_cool(sleep)
+    assert sleeps == [worker.HOT_WAIT_S] * 3  # 76 is within the margin: not yet
+    assert (h.hot, h.state) == (False, "working")
+    h.wait_until_cool(sleep)  # cool: returns at once
+    assert len(sleeps) == 3
 
 
 def _done(conn: sqlite3.Connection, eid: int, vid: str, steps_: tuple[str, ...]) -> None:
@@ -135,8 +157,11 @@ def test_run_processes_in_order_waits_when_hot_and_backs_off_downloads(
     sleeps: list[float] = []
     pauses: list[int] = []
 
-    def fake_run_episode(s: Any, conn: sqlite3.Connection, eid: int, steps_: list[str]) -> Any:
+    def fake_run_episode(
+        s: Any, conn: sqlite3.Connection, eid: int, steps_: list[str], **kw: Any
+    ) -> Any:
         ran.append(eid)
+        assert callable(kw["before_whisper"])
         if eid == 2:  # YouTube refuses: the download step fails
 
             def fail() -> dict[str, Any]:

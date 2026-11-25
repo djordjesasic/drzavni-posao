@@ -7,6 +7,7 @@ import random
 import sqlite3
 import tempfile
 import time
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any, NamedTuple
 
@@ -108,13 +109,23 @@ def split_points(start: float, end: float, step: float, min_tail: float = 5.0) -
 class _Transcriber:
     """Sends pieces of one episode's WAV to Whisper, one at a time, and keeps the score."""
 
-    def __init__(self, s: Settings, wav: Path, work: Path, prompt: str) -> None:
+    def __init__(
+        self,
+        s: Settings,
+        wav: Path,
+        work: Path,
+        prompt: str,
+        before: Callable[[], None] | None = None,
+    ) -> None:
         self.s, self.wav, self.work, self.prompt = s, wav, work, prompt
+        self.before = before
         self.busy = 0.0
         self.calls = 0
 
     def piece(self, start: float, end: float, prompt: str) -> list[dict[str, Any]]:
         wait_if_paused(self.s.pause_start, self.s.pause_end)
+        if self.before:
+            self.before()  # the worker's heat check; outside the lock, so others go on
         # Unique across containers too (each may run python as PID 1, all share /data):
         # two runs on one episode must not overwrite or delete each other's audio.
         fd, name = tempfile.mkstemp(dir=self.work, prefix="piece-", suffix=".wav")
@@ -319,17 +330,24 @@ def _reused(start: float, end: float, old: _Prev) -> dict[str, Any]:
 
 
 def do_transcribe(
-    s: Settings, conn: sqlite3.Connection, eid: int, video_id: str, force: bool = False
+    s: Settings,
+    conn: sqlite3.Connection,
+    eid: int,
+    video_id: str,
+    force: bool = False,
+    before_whisper: Callable[[], None] | None = None,
 ) -> dict[str, Any]:
     """Transcribe chunk by chunk. Chunks a previous run of the same video got right
     (no loop) are reused, so re-running this step only redoes the bad parts.
-    force: also redo unresolved chunks (see "Unresolved chunks")."""
+    force: also redo unresolved chunks (see "Unresolved chunks").
+    before_whisper: called before every Whisper request (the worker waits there while
+    the machine is too hot)."""
     _, wav, work = _paths(s, eid)
     _remove_stale_temp(s, eid)
     chunks: list[list[float]] = json.loads((work / "chunks.json").read_text())
     out_path = s.transcripts_dir / f"{eid}.json"
     previous = _previous_chunks(out_path, video_id)
-    tr = _Transcriber(s, wav, work, whisper_prompt(conn, s.whisper_prompt))
+    tr = _Transcriber(s, wav, work, whisper_prompt(conn, s.whisper_prompt), before_whisper)
     out_chunks: list[dict[str, Any]] = []
     reused = retried = unresolved = 0
     s.transcripts_dir.mkdir(parents=True, exist_ok=True)
@@ -425,10 +443,12 @@ def run_episode(
     force: bool = False,
     *,
     rebuild_index: bool = False,
+    before_whisper: Callable[[], None] | None = None,
 ) -> dict[str, Any]:
     """rebuild_index: recompute every embedding (after a change of the embedding model
     or fold()) and run the index step even if done. --force alone keeps do_index on
-    its incremental path, so a forced retry of hollow chunks stays cheap."""
+    its incremental path, so a forced retry of hollow chunks stays cheap.
+    before_whisper: see do_transcribe."""
     vid = active_video_id(conn, eid)
     if vid is None:
         raise ValueError(f"episode {eid} not in the active catalog")
@@ -455,7 +475,7 @@ def run_episode(
         elif step == "prepare":
             fn = lambda: do_prepare(s, eid)  # noqa: E731
         elif step == "transcribe":
-            fn = lambda: do_transcribe(s, conn, eid, vid, force)  # noqa: E731
+            fn = lambda: do_transcribe(s, conn, eid, vid, force, before_whisper)  # noqa: E731
         elif step == "speakers":
             fn = lambda: speakers.do_speakers(s, conn, eid, speakers.get_embedder(s))  # noqa: E731
         else:

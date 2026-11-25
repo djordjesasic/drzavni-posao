@@ -9,7 +9,7 @@ Rules (CLAUDE.md and PLAN.md, phase 2):
 - a failed step waits before the next try (pipeline.RETRY_*), and after
   pipeline.MAX_ATTEMPTS failures in a row it is left for the owner;
 - the machine's temperatures are logged every minute; while one is too high no new
-  episode is started.
+  episode is started and no Whisper request is sent.
 """
 
 import logging
@@ -30,7 +30,7 @@ log = logging.getLogger(__name__)
 
 HWMON = Path("/sys/class/hwmon")
 HEALTH_EVERY_S = 60
-HOT_WAIT_S = 300
+HOT_WAIT_S = 60  # RAM cools ~4 °C a minute, so a long wait only loses time
 DOWNLOAD_BACKOFF_FIRST_S = 300  # after a failed download; doubles while they keep failing
 DOWNLOAD_BACKOFF_MAX_S = 2 * 3600
 IDLE_WAIT_S = 600  # nothing to do: look again later (failed steps become due over time)
@@ -41,17 +41,22 @@ class Limits:
     cpu_c: float = 90.0  # k10temp Tctl
     gpu_c: float = 95.0  # amdgpu edge
     nvme_c: float = 80.0  # nvme Composite
+    ram_c: float = 80.0  # spd5118, hottest module
     margin_c: float = 5.0  # hot until every reading is this much below its limit
 
 
 def read_temps(root: Path = HWMON) -> dict[str, float]:
-    """cpu, gpu and nvme temperature in °C from hwmon; missing sensors are left out."""
+    """cpu, gpu, nvme and ram temperature in °C from hwmon; missing sensors are left out.
+    ram is the hottest memory module (one spd5118 sensor per DDR5 module)."""
     wanted = {("k10temp", "Tctl"): "cpu", ("amdgpu", "edge"): "gpu", ("nvme", "Composite"): "nvme"}
     out: dict[str, float] = {}
     for h in sorted(root.glob("hwmon*")):
         try:
             name = (h / "name").read_text().strip()
             for t in sorted(h.glob("temp*_input")):
+                if name == "spd5118":
+                    out["ram"] = max(out.get("ram", -273.0), int(t.read_text()) / 1000)
+                    continue
                 label_file = t.with_name(t.name.replace("_input", "_label"))
                 label = label_file.read_text().strip() if label_file.exists() else ""
                 key = wanted.get((name, label))
@@ -65,7 +70,7 @@ def read_temps(root: Path = HWMON) -> dict[str, float]:
 def too_hot(temps: dict[str, float], limits: Limits, was_hot: bool) -> bool:
     """Hot when a reading reaches its limit; once hot, cool by `margin_c` before going on."""
     margin = limits.margin_c if was_hot else 0.0
-    caps = {"cpu": limits.cpu_c, "gpu": limits.gpu_c, "nvme": limits.nvme_c}
+    caps = {"cpu": limits.cpu_c, "gpu": limits.gpu_c, "nvme": limits.nvme_c, "ram": limits.ram_c}
     return any(temps[k] >= caps[k] - margin for k in caps if k in temps)
 
 
@@ -92,6 +97,20 @@ class Health:
         self.hot = too_hot(temps, self.limits, self.hot)
         return temps
 
+    def wait_until_cool(self, sleep: Any = time.sleep) -> None:
+        """Called before every Whisper request: an episode takes minutes of Whisper, long
+        enough for RAM and disk to pass their limits (RAM went 65 -> 99 °C), so the
+        check before each episode alone is not enough."""
+        temps = self.check()
+        if not self.hot:
+            return
+        log.warning("too hot mid-episode %s (%s), waiting", self.episode, temps)
+        while self.hot:
+            self.state = "hot"
+            sleep(HOT_WAIT_S)
+            self.check()
+        self.state = "working"
+
     def _run(self) -> None:
         conn = connect(self.db)
         try:
@@ -101,9 +120,9 @@ class Health:
                     self.state = "cooled"  # the run loop goes on at its next check
                 with conn:
                     conn.execute(
-                        "INSERT INTO worker_health (cpu_c, gpu_c, nvme_c, state, episode_id) "
-                        "VALUES (?, ?, ?, ?, ?)",
-                        (temps.get("cpu"), temps.get("gpu"), temps.get("nvme"),
+                        "INSERT INTO worker_health (cpu_c, gpu_c, nvme_c, ram_c, state, "
+                        "episode_id) VALUES (?, ?, ?, ?, ?, ?)",
+                        (temps.get("cpu"), temps.get("gpu"), temps.get("nvme"), temps.get("ram"),
                          "hot" if self.hot else self.state, self.episode),
                     )  # fmt: skip
         finally:
@@ -168,7 +187,10 @@ def run(
             downloading = pipeline.will_run(conn, eid, "download", vid, False)
             health.state, health.episode = "working", eid
             try:
-                res = transcribe_steps.run_episode(s, conn, eid, list(pipeline.STEPS))
+                res = transcribe_steps.run_episode(
+                    s, conn, eid, list(pipeline.STEPS),
+                    before_whisper=lambda: health.wait_until_cool(sleep),
+                )  # fmt: skip
                 log.info("episode %s: %s", eid, {k: v is not None for k, v in res.items()})
                 if downloading:
                     download_backoff = 0.0

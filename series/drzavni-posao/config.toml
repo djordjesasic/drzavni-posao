@@ -106,9 +106,14 @@ allowed_hosts = ["llmserver"]
 # nvme 66 (its second sensor 85). The disk's own limits: warning 84, critical 89.
 # Until 2026-11-21 the kernel had pcie_aspm=off: the idle disk stayed at ~78, so the
 # worker waited 50-65% of the time. Without it the idle disk is ~70.
+# ram: the hottest DDR5 module (spd5118; module limits: warning 55, critical 85). Measured
+# 2026-11-25: 97-99 while Whisper runs, 65 idle, cooling ~4 °C a minute. Kept at 80, below
+# the module's critical value. The temperatures are also checked before every Whisper request,
+# not only before an episode.
 cpu_c = 90
 gpu_c = 95
 nvme_c = 80
+ram_c = 80
 margin_c = 5
 
 [schedule]

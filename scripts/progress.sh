@@ -42,11 +42,12 @@ if failed:
     for row in failed:
         print("  ", row)
 row = c.execute(
-    "SELECT at, cpu_c, gpu_c, nvme_c, state, episode_id FROM worker_health ORDER BY at DESC LIMIT 1"
+    "SELECT at, cpu_c, gpu_c, nvme_c, ram_c, state, episode_id FROM worker_health"
+    " ORDER BY at DESC LIMIT 1"
 ).fetchone()
 if row:
-    print(f"last health (UTC) {row[0]}: cpu {row[1]} gpu {row[2]} nvme {row[3]} °C,"
-          f" {row[4]}, episode {row[5]}")
+    print(f"last health (UTC) {row[0]}: cpu {row[1]} gpu {row[2]} nvme {row[3]} ram {row[4]} °C,"
+          f" {row[5]}, episode {row[6]}")
 
 # --- the last N hours -------------------------------------------------------------
 print(f"\nlast {hours} h:")
@@ -81,11 +82,13 @@ print(f"  worker minutes logged: {logged}; waiting for heat: {waited}"
       f" ({100 * waited / max(logged, 1):.0f}%); idle: {states.get('idle', 0)}")
 print("  (minutes not logged at all are mostly the daily pause 18:55-20:00)")
 mx = c.execute(
-    "SELECT MAX(cpu_c), MAX(gpu_c), MAX(nvme_c) FROM worker_health WHERE at > datetime('now', ?)",
+    "SELECT MAX(cpu_c), MAX(gpu_c), MAX(nvme_c), MAX(ram_c) FROM worker_health"
+    " WHERE at > datetime('now', ?)",
     (since,),
 ).fetchone()
 if mx[0] is not None:
-    print(f"  max temperatures: cpu {mx[0]:.0f}, gpu {mx[1]:.0f}, nvme {mx[2]:.0f} °C")
+    ram = "-" if mx[3] is None else f"{mx[3]:.0f}"  # not logged before schema v13
+    print(f"  max temperatures: cpu {mx[0]:.0f}, gpu {mx[1]:.0f}, nvme {mx[2]:.0f}, ram {ram} °C")
 if n_done:
     left_h = (total - done) / (n_done / hours)
     print(f"  at this pace: {total - done} episodes left, ~{left_h:.0f} h (~{left_h / 24:.1f} days)")

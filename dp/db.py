@@ -196,6 +196,8 @@ MIGRATIONS: list[str] = [
         summary         TEXT                                  -- JSON counts after collect
     );
     """,
+    # 13: memory temperature (hottest DDR5 module, spd5118), logged; not a limit yet
+    "ALTER TABLE worker_health ADD COLUMN ram_c REAL;",
 ]
 
 

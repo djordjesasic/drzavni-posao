@@ -212,8 +212,10 @@ def test_transcribe_retries_loops_and_reuses_good_chunks(
     monkeypatch.setattr(steps.whisper, "transcribe", fake_whisper)
     monkeypatch.setattr(steps, "wait_if_paused", lambda *a, **k: None)
 
-    info = steps.do_transcribe(s, conn, 1, "v1")
+    heat_checks: list[int] = []
+    info = steps.do_transcribe(s, conn, 1, "v1", before_whisper=lambda: heat_checks.append(1))
     assert info["chunks_retried"] == 1 and info["chunks_reused"] == 0
+    assert len(heat_checks) == len(calls)  # a heat check before every Whisper request
     assert calls == [
         (0, 90, "p"), (0, 30, "p"), (0, 30, "-"), (30, 60, "p"), (60, 90, "p"), (90, 180, "p")
     ]  # fmt: skip
