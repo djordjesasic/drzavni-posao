@@ -118,12 +118,14 @@ class Health:
                 temps = self.check()
                 if not self.hot and self.state == "hot":
                     self.state = "cooled"  # the run loop goes on at its next check
+                # The state the worker set: "hot" only while it really waits. `hot` turns on
+                # mid-request too, and the worker finishes that request before it waits.
                 with conn:
                     conn.execute(
                         "INSERT INTO worker_health (cpu_c, gpu_c, nvme_c, ram_c, state, "
                         "episode_id) VALUES (?, ?, ?, ?, ?, ?)",
                         (temps.get("cpu"), temps.get("gpu"), temps.get("nvme"), temps.get("ram"),
-                         "hot" if self.hot else self.state, self.episode),
+                         self.state, self.episode),
                     )  # fmt: skip
         finally:
             conn.close()

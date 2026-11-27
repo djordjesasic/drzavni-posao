@@ -191,15 +191,23 @@ def test_health_thread_logs_to_the_database(
     _hwmon(tmp_path / "hw", [("k10temp", "Tctl", 91000)])
     monkeypatch.setattr(worker, "HEALTH_EVERY_S", 0.05)
     h = worker.Health(tmp_path / "t.sqlite", worker.Limits(), tmp_path / "hw")
+    h.state = "working"  # mid-request: too hot, but not waiting yet
     h.start()
     assert h.hot
     import time
 
-    deadline = time.monotonic() + 5
-    while time.monotonic() < deadline:
-        if conn.execute("SELECT COUNT(*) FROM worker_health").fetchone()[0]:
-            break
-        time.sleep(0.05)
+    def rows() -> list[tuple[Any, ...]]:
+        return [tuple(r) for r in conn.execute("SELECT cpu_c, state FROM worker_health")]
+
+    def wait_for(n: int) -> None:
+        deadline = time.monotonic() + 5
+        while len(rows()) < n and time.monotonic() < deadline:
+            time.sleep(0.02)
+
+    wait_for(1)
+    assert rows()[0] == (91.0, "working")
+    h.state = "hot"  # the worker now waits
+    n = len(rows())
+    wait_for(n + 1)
     h.stop()
-    row = conn.execute("SELECT cpu_c, state FROM worker_health").fetchone()
-    assert tuple(row) == (91.0, "hot")
+    assert rows()[n] == (91.0, "hot")
